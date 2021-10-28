@@ -1,0 +1,19 @@
+### Installation
+```
+python3 -m venv venv && \
+source venv/bin/activate && \
+pip install -r requirements.txt && \
+playwright install chrome
+```
+
+## Setup
+```
+cp .env.sample .env
+# fill with your CUIL, PASSWORD and your name as it's seen while clicking on 'emitir factura'
+# Usually SURNAME NAME all uppercase.
+```
+
+## Usage
+```
+python main.py
+```
