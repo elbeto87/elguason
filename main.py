@@ -12,6 +12,7 @@ class FacturacionParameters:
     password: str
     facturador_name: str
     service_name: str
+    punto_de_venta: int
     service_amount: int
 
 
@@ -58,15 +59,17 @@ def run(
 
     print('Eligiendo punto de venta y tipo de factura')
     # Modificar si hay mas de un punto de venta
-    page1.select_option("select[name=\"puntoDeVenta\"]", "1")
+
+    page1.select_option("select[name=\"puntoDeVenta\"]", str(config.punto_de_venta))
+
     # Wait it automatically selects Factura C on second dropdown menu
     time.sleep(2)
     page1.click("text=Continuar >")
 
     print('Ingresando servicio como tipo de facturacion')
     # Facturacion de Servicios
-    servicios = 2
-    page1.select_option("select[name=\"idConcepto\"]", f"{servicios}")
+    servicios = "2"
+    page1.select_option("select[name=\"idConcepto\"]", servicios)
     # Click text=Continuar >
     page1.click("text=Continuar >")
     # assert page1.url == "https://serviciosjava2.afip.gob.ar/rcel/jsp/genComDatosReceptor.do"
@@ -115,7 +118,7 @@ def run(
 
 load_dotenv()
 
-monto = int(input('Ingresa el monto a facturar [10.000]: '))
+monto = int(input('Ingresa el monto a facturar [10.000]: ') or 10_000)
 servicio = input('Ingresa el titulo del servicio a facturar [Servicios Profesionales]: ')
 dry_run = input('Queres facturar posta o solo ver si funciona? Presiona Y va a facturar,'
                 'Cualquier otra tecla para demo: ')
@@ -125,7 +128,8 @@ config = FacturacionParameters(
     password=os.environ['PASSWORD'],
     facturador_name=os.environ['FACTURADOR'],
     service_name=servicio or 'Servicios Profesionales',
-    service_amount=monto or 10_000
+    punto_de_venta=os.environ.get("PUNTO_DE_VENTA", 1),
+    service_amount=monto
 )
 
 with sync_playwright() as playwright:
