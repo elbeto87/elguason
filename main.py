@@ -87,10 +87,10 @@ def run(
     page1.click("text=Continuar >")
 
     page1.click("textarea[name=\"detalleDescripcion\"]")
-    page1.fill("textarea[name=\"detalleDescripcion\"]", f"{config.service_name}")
+    page1.fill("textarea[name=\"detalleDescripcion\"]", config.service_name)
 
     page1.click("input[name=\"detallePrecio\"]")
-    page1.fill("input[name=\"detallePrecio\"]", f"{config.service_amount}")
+    page1.fill("input[name=\"detallePrecio\"]", str(config.service_amount))
 
     page1.click("text=Continuar >")
 
@@ -118,7 +118,7 @@ def run(
 
 load_dotenv()
 
-monto = int(input('Ingresa el monto a facturar [10.000]: ') or 10_000)
+monto = float(input('Ingresa el monto a facturar [10.000]: ') or 10_000)
 servicio = input('Ingresa el titulo del servicio a facturar [Servicios Profesionales]: ')
 dry_run = input('Queres facturar posta o solo ver si funciona? Presiona Y va a facturar,'
                 'Cualquier otra tecla para demo: ')
