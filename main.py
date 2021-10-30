@@ -12,6 +12,7 @@ class FacturacionParameters:
     password: str
     facturador_name: str
     service_name: str
+    cuit_receptor: str
     punto_de_venta: int
     service_amount: int
 
@@ -21,9 +22,8 @@ def run(
     config: FacturacionParameters,
     dry_run=True,
 ) -> None:
-    if config.service_amount > 12500:
-        raise ValueError(f'No esta soportado facturar mas de {config.service_amount}, '
-                         f'pues requiere CUIL de consumidor final')
+    if config.service_amount > 12500 and not config.cuit_receptor:
+        raise ValueError(f'Para facturar {config.service_amount} se requiere CUIT de consumidor final')
 
     browser = plwright.chromium.launch(headless=False, slow_mo=2000)
     context = browser.new_context(
@@ -78,8 +78,11 @@ def run(
         f'Facturando {config.service_name} por un monto de {config.service_amount} '
         f'para consumidor final con pago al contado'
     )
-    consumidor_final = 5
-    page1.select_option("select[name=\"idIVAReceptor\"]", f"{consumidor_final}")
+    consumidor_final = "5"
+    page1.select_option("select[name=\"idIVAReceptor\"]", consumidor_final)
+
+    if config.cuit_receptor:
+        page1.fill("input[name=\"nroDocReceptor\"]", config.cuit_receptor)
 
     # Check input[name="formaDePago"]
     # Chequear Checkbox de Contado
@@ -120,6 +123,7 @@ load_dotenv()
 
 monto = float(input('Ingresa el monto a facturar [10.000]: ') or 10_000)
 servicio = input('Ingresa el titulo del servicio a facturar [Servicios Profesionales]: ')
+cuit_receptor = input('CUIT del receptor: ')
 dry_run = input('Queres facturar posta o solo ver si funciona? Presiona Y va a facturar,'
                 'Cualquier otra tecla para demo: ')
 
@@ -128,6 +132,7 @@ config = FacturacionParameters(
     password=os.environ['PASSWORD'],
     facturador_name=os.environ['FACTURADOR'],
     service_name=servicio or 'Servicios Profesionales',
+    cuit_receptor=cuit_receptor.strip(),
     punto_de_venta=os.environ.get("PUNTO_DE_VENTA", 1),
     service_amount=monto
 )
