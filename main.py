@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass
 import time
+from dotenv import load_dotenv
 
 from playwright.sync_api import Playwright, sync_playwright
 
@@ -112,10 +113,12 @@ def run(
     browser.close()
 
 
+load_dotenv()
+
 monto = int(input('Ingresa el monto a facturar [10.000]: '))
 servicio = input('Ingresa el titulo del servicio a facturar [Servicios Profesionales]: ')
 dry_run = input('Queres facturar posta o solo ver si funciona? Presiona Y va a facturar,'
-                'Cualquier otra tecla para demo')
+                'Cualquier otra tecla para demo: ')
 
 config = FacturacionParameters(
     cuil=os.environ['CUIL'],
