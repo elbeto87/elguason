@@ -1,6 +1,8 @@
 import os
 from dataclasses import dataclass
 import time
+from decimal import Decimal
+
 from dotenv import load_dotenv
 
 from playwright.sync_api import Playwright, sync_playwright
@@ -14,7 +16,10 @@ class FacturacionParameters:
     service_name: str
     cuit_receptor: str
     punto_de_venta: int
-    service_amount: int
+    service_amount: Decimal
+
+
+LIMITE_FACTURACION_ANONIMA = 12500
 
 
 def run(
@@ -22,7 +27,7 @@ def run(
     config: FacturacionParameters,
     dry_run=True,
 ) -> None:
-    if config.service_amount > 12500 and not config.cuit_receptor:
+    if config.service_amount > LIMITE_FACTURACION_ANONIMA and not config.cuit_receptor:
         raise ValueError(f'Para facturar {config.service_amount} se requiere CUIT de consumidor final')
 
     browser = plwright.chromium.launch(headless=False, slow_mo=2000)
@@ -82,6 +87,7 @@ def run(
     page1.select_option("select[name=\"idIVAReceptor\"]", consumidor_final)
 
     if config.cuit_receptor:
+        page1.click("input[name=\"nroDocReceptor\"]")
         page1.fill("input[name=\"nroDocReceptor\"]", config.cuit_receptor)
 
     # Check input[name="formaDePago"]
@@ -121,11 +127,12 @@ def run(
 
 load_dotenv()
 
-monto = float(input('Ingresa el monto a facturar [10.000]: ') or 10_000)
+monto = Decimal(input('Ingresa el monto a facturar [10.000]: ') or 10_000)
 servicio = input('Ingresa el titulo del servicio a facturar [Servicios Profesionales]: ')
-cuit_receptor = input('CUIT del receptor: ')
-dry_run = input('Queres facturar posta o solo ver si funciona? Presiona Y va a facturar,'
-                'Cualquier otra tecla para demo: ')
+cuit_receptor = input('CUIT del receptor: ') if monto > LIMITE_FACTURACION_ANONIMA else ''
+dry_run = input('Queres facturar posta o solo ver si funciona? '
+                'Presiona Y para facturar, o'
+                'cualquier otra tecla para el modo demo: ')
 
 config = FacturacionParameters(
     cuil=os.environ['CUIL'],
