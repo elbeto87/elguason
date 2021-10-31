@@ -1,9 +1,13 @@
+# El Guasón
+![logo](elguason.jpeg)
+
 ### Installation
 ```
 python3 -m venv venv && \
 source venv/bin/activate && \
 pip install -r requirements.txt && \
-playwright install chrome
+playwright install chrome && \
+python main.py
 ```
 
 ## Setup
