@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass
 import time
+from dotenv import load_dotenv
 
 from playwright.sync_api import Playwright, sync_playwright
 
@@ -11,6 +12,8 @@ class FacturacionParameters:
     password: str
     facturador_name: str
     service_name: str
+    cuit_receptor: str
+    punto_de_venta: int
     service_amount: int
 
 
@@ -19,9 +22,8 @@ def run(
     config: FacturacionParameters,
     dry_run=True,
 ) -> None:
-    if config.service_amount > 12500:
-        raise ValueError(f'No esta soportado facturar mas de {config.service_amount}, '
-                         f'pues requiere CUIL de consumidor final')
+    if config.service_amount > 12500 and not config.cuit_receptor:
+        raise ValueError(f'Para facturar {config.service_amount} se requiere CUIT de consumidor final')
 
     browser = plwright.chromium.launch(headless=False, slow_mo=2000)
     context = browser.new_context(
@@ -57,15 +59,17 @@ def run(
 
     print('Eligiendo punto de venta y tipo de factura')
     # Modificar si hay mas de un punto de venta
-    page1.select_option("select[name=\"puntoDeVenta\"]", "1")
+
+    page1.select_option("select[name=\"puntoDeVenta\"]", str(config.punto_de_venta))
+
     # Wait it automatically selects Factura C on second dropdown menu
     time.sleep(2)
     page1.click("text=Continuar >")
 
     print('Ingresando servicio como tipo de facturacion')
     # Facturacion de Servicios
-    servicios = 2
-    page1.select_option("select[name=\"idConcepto\"]", f"{servicios}")
+    servicios = "2"
+    page1.select_option("select[name=\"idConcepto\"]", servicios)
     # Click text=Continuar >
     page1.click("text=Continuar >")
     # assert page1.url == "https://serviciosjava2.afip.gob.ar/rcel/jsp/genComDatosReceptor.do"
@@ -74,8 +78,11 @@ def run(
         f'Facturando {config.service_name} por un monto de {config.service_amount} '
         f'para consumidor final con pago al contado'
     )
-    consumidor_final = 5
-    page1.select_option("select[name=\"idIVAReceptor\"]", f"{consumidor_final}")
+    consumidor_final = "5"
+    page1.select_option("select[name=\"idIVAReceptor\"]", consumidor_final)
+
+    if config.cuit_receptor:
+        page1.fill("input[name=\"nroDocReceptor\"]", config.cuit_receptor)
 
     # Check input[name="formaDePago"]
     # Chequear Checkbox de Contado
@@ -83,10 +90,10 @@ def run(
     page1.click("text=Continuar >")
 
     page1.click("textarea[name=\"detalleDescripcion\"]")
-    page1.fill("textarea[name=\"detalleDescripcion\"]", f"{config.service_name}")
+    page1.fill("textarea[name=\"detalleDescripcion\"]", config.service_name)
 
     page1.click("input[name=\"detallePrecio\"]")
-    page1.fill("input[name=\"detallePrecio\"]", f"{config.service_amount}")
+    page1.fill("input[name=\"detallePrecio\"]", str(config.service_amount))
 
     page1.click("text=Continuar >")
 
@@ -112,17 +119,22 @@ def run(
     browser.close()
 
 
-monto = int(input('Ingresa el monto a facturar [10.000]: '))
+load_dotenv()
+
+monto = float(input('Ingresa el monto a facturar [10.000]: ') or 10_000)
 servicio = input('Ingresa el titulo del servicio a facturar [Servicios Profesionales]: ')
+cuit_receptor = input('CUIT del receptor: ')
 dry_run = input('Queres facturar posta o solo ver si funciona? Presiona Y va a facturar,'
-                'Cualquier otra tecla para demo')
+                'Cualquier otra tecla para demo: ')
 
 config = FacturacionParameters(
     cuil=os.environ['CUIL'],
     password=os.environ['PASSWORD'],
     facturador_name=os.environ['FACTURADOR'],
     service_name=servicio or 'Servicios Profesionales',
-    service_amount=monto or 10_000
+    cuit_receptor=cuit_receptor.strip(),
+    punto_de_venta=os.environ.get("PUNTO_DE_VENTA", 1),
+    service_amount=monto
 )
 
 with sync_playwright() as playwright:
