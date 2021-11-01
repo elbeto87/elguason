@@ -1,14 +1,8 @@
 # El Guasón
 ![logo](meta/elguason.jpeg)
 
-### Installation
-```
-python3 -m venv venv && \
-source venv/bin/activate && \
-pip install --upgrade pip flit && \
-flit install && \
-playwright install chromium && \
-```
+### Installation (Unix only for now)
+`bash install_unix.sh`
 
 ## Setup
 ```
@@ -18,7 +12,15 @@ cp .env.sample .env
 ```
 
 ## Usage
-After running `flit install` it will add a script under `facturar` alias so run:
+After successfull installation, and alias is stored under `facturar` so run:
 ```
 facturar
+```
+And you should see something like..
+```
+Ingresa el titulo del servicio a facturar [Servicios Profesionales]: Mantenimiento Pc
+Ingresa el monto a facturar [10000]: 5200
+Inicio de facturacion 📝
+Abriendo página monotributo..
+Ingresando al sitio..
 ```
