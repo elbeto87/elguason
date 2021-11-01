@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools >= 40.6.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "elguason"
+version = "1.0.0"
+description = "Facturas de Monotributo AFIP as a service"
+authors = [
+    "Ambrosini Nahuel <ambro17.1@gmail.com>"
+]
+license = "GPL"
+readme = "README.md"
+python = "^3.8"
+homepage = "https://github.com/Ambro17/elguason"
+repository = "https://github.com/Ambro17/elguason"
+keywords = ["facturacion", "monotributo"]
+classifiers = [
+    "Topic :: Software Development"
+]
+dependencies = [
+    'playwright==1.16.0',
+    'python-dotenv==0.19.1',
+]
