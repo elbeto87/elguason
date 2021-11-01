@@ -1,9 +1,6 @@
-import os
 from dataclasses import dataclass
 import time
 from decimal import Decimal
-
-from dotenv import load_dotenv
 
 from playwright.sync_api import Playwright, sync_playwright
 
@@ -17,6 +14,7 @@ class FacturacionParameters:
     cuit_receptor: str
     punto_de_venta: int
     service_amount: Decimal
+    askconfirmation: bool = True
 
 
 LIMITE_FACTURACION_ANONIMA = 12500
@@ -25,12 +23,11 @@ LIMITE_FACTURACION_ANONIMA = 12500
 def run(
     plwright: Playwright,
     config: FacturacionParameters,
-    dry_run=True,
 ) -> None:
     if config.service_amount > LIMITE_FACTURACION_ANONIMA and not config.cuit_receptor:
         raise ValueError(f'Para facturar {config.service_amount} se requiere CUIT de consumidor final')
 
-    browser = plwright.chromium.launch(headless=False, slow_mo=2000)
+    browser = plwright.chromium.launch(headless=False, slow_mo=1000)
     context = browser.new_context(
         accept_downloads=True,
         user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)"
@@ -103,7 +100,7 @@ def run(
 
     page1.click("text=Continuar >")
 
-    if dry_run:
+    if config.askconfirmation:
         print('Operacion exitosa, pero evitamos la facturacion pues dry_run=True')
         print('Presiona ENTER para salir')
         input()
@@ -125,26 +122,8 @@ def run(
     browser.close()
 
 
-load_dotenv()
-
-monto = Decimal(input('Ingresa el monto a facturar [10.000]: ') or 10_000)
-servicio = input('Ingresa el titulo del servicio a facturar [Servicios Profesionales]: ')
-cuit_receptor = input('CUIT del receptor: ') if monto > LIMITE_FACTURACION_ANONIMA else ''
-dry_run = input('Queres facturar posta o solo ver si funciona? '
-                'Presiona Y para facturar, o'
-                'cualquier otra tecla para el modo demo: ')
-
-config = FacturacionParameters(
-    cuil=os.environ['CUIL'],
-    password=os.environ['PASSWORD'],
-    facturador_name=os.environ['FACTURADOR'],
-    service_name=servicio or 'Servicios Profesionales',
-    cuit_receptor=cuit_receptor.strip(),
-    punto_de_venta=os.environ.get("PUNTO_DE_VENTA", 1),
-    service_amount=monto
-)
-
-with sync_playwright() as playwright:
-    print("Inicio de facturacion 📝")
-    run(playwright, config=config, dry_run=dry_run.upper() != 'Y')
-    print("Facturacion finalizada ✨")
+def facturar(config: FacturacionParameters):
+    with sync_playwright() as playwright:
+        print("Inicio de facturacion 📝")
+        run(playwright, config=config)
+        print("Facturacion finalizada ✨")
