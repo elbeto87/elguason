@@ -7,7 +7,7 @@ python3 -m venv venv && \
 source venv/bin/activate && \
 pip install --upgrade pip && \
 pip install . && \
-playwright install chrome && \
+playwright install chromium && \
 python main.py
 ```
 
