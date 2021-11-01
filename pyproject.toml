@@ -1,3 +1,25 @@
 [build-system]
 requires = ["setuptools >= 40.6.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "elguason"
+description = "Facturacion automatizada para el monotributo AFIP"
+readme = "README.md"
+license = {file = "LICENSE"}
+authors = [
+    {name = "Nahuel Ambrosini", email = "ambro17.1@gmail.com"},
+]
+classifiers = [
+    "Private :: Do Not Upload",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "playwright==1.16.0",
+    "python-dotenv==0.19.1",
+    "click==8.0.3",
+]
+dynamic = ['version']
+
+[project.scripts]
+facturar = "elguason.cli:myfactura"

@@ -101,7 +101,7 @@ def run(
     page1.click("text=Continuar >")
 
     if config.askconfirmation:
-        resp = input('Presiona ENTER para facturar, o cualquier otra tecla para cancelar')
+        resp = input('Presiona ENTER para facturar, o cualquier otra tecla para cancelar\n')
         if resp != '':
             print('Cancelando Facturacion')
             exit(0)
