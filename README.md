@@ -1,5 +1,5 @@
 # El Guasón
-![logo](elguason.jpeg)
+![logo](meta/elguason.jpeg)
 
 ### Installation
 ```
