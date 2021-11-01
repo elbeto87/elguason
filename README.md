@@ -8,7 +8,6 @@ source venv/bin/activate && \
 pip install --upgrade pip && \
 pip install . && \
 playwright install chromium && \
-facturar
 ```
 
 ## Setup
@@ -20,5 +19,5 @@ cp .env.sample .env
 
 ## Usage
 ```
-python main.py
+facturar
 ```
