@@ -101,10 +101,10 @@ def run(
     page1.click("text=Continuar >")
 
     if config.askconfirmation:
-        print('Operacion exitosa, pero evitamos la facturacion pues dry_run=True')
-        print('Presiona ENTER para salir')
-        input()
-        exit(0)
+        resp = input('Presiona ENTER para facturar, o cualquier otra tecla para cancelar')
+        if resp != '':
+            print('Cancelando Facturacion')
+            exit(0)
 
     # Clickear confirmar y aceptar el popup
     page1.once("dialog", lambda dialog: dialog.accept())
