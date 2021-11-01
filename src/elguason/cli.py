@@ -1,9 +1,9 @@
 import os
 import click
-from dotenv.main import load_dotenv
+from dotenv import load_dotenv
 import getpass
 
-from elguason.main import FacturacionParameters, facturar
+from .main import FacturacionParameters, facturar
 
 
 load_dotenv()

@@ -8,7 +8,7 @@ source venv/bin/activate && \
 pip install --upgrade pip && \
 pip install . && \
 playwright install chromium && \
-python main.py
+facturar
 ```
 
 ## Setup
