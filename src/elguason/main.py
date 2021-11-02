@@ -1,8 +1,16 @@
+import datetime
 from dataclasses import dataclass
 import time
 from decimal import Decimal
+from typing import List
 
 from playwright.sync_api import Playwright, sync_playwright
+
+
+@dataclass
+class FacturacionProgramada:
+    date: datetime.date
+    factura: 'FacturacionParameters'
 
 
 @dataclass
@@ -11,10 +19,15 @@ class FacturacionParameters:
     password: str
     facturador_name: str
     service_name: str
+    service_amount: Decimal
     cuit_receptor: str
     punto_de_venta: int
-    service_amount: Decimal
     askconfirmation: bool = True
+
+    def __str__(self):
+        base = f'Factura de {self.facturador_name} por "{self.service_name}" por un monto de ${self.service_amount} '
+        base += f'para {self.cuit_receptor}' if self.cuit_receptor else ''
+        return base
 
 
 LIMITE_FACTURACION_ANONIMA = 12500
@@ -127,3 +140,9 @@ def facturar(config: FacturacionParameters):
         print("Inicio de facturacion 📝")
         run(playwright, config=config)
         print("Facturacion finalizada ✨")
+
+
+def facturar_multiples(facturaciones_por_dia: List[FacturacionParameters]):
+    # TODO: Codegen browser to generate multiple facturas at once
+    # Or perhaps just invoke the same run script N times.
+    pass
