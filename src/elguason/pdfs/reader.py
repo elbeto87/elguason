@@ -1,8 +1,12 @@
+import csv
 import datetime
 import glob
+import json
 import re
 import warnings
 from dataclasses import dataclass
+from typing import List
+
 from pdfminer.high_level import extract_text
 from pdfminer.pdfdocument import PDFTextExtractionNotAllowedWarning
 
@@ -30,6 +34,30 @@ facturas = []
 for pdf in glob.glob('*.pdf'):
     facturas.append(read(pdf))
 
+
+def dump_to_csv(facturas: List[Factura], facturas_csv_path='facturas.csv'):
+    with open(facturas_csv_path, 'w') as f:
+        writer = csv.writer(f)
+        writer.writerow(['Fecha', 'Monto'])
+        for factura in facturas:
+            writer.writerow([factura.fecha, factura.monto])
+
+    return facturas_csv_path
+
+
+def dump_to_json(facturas: List[Factura], saveas='facturas.json'):
+    facturasdict = sorted([
+        {'fecha': factura.fecha.strftime('%d/%m/%Y'), 'monto': factura.monto}
+        for factura in facturas
+    ], key=lambda key: key['fecha'])
+    with open(saveas, 'w') as f:
+        json.dump(facturasdict, f, indent=2, ensure_ascii=False)
+
+    return saveas
+
+
 total = sum(x.monto for x in facturas)
 print(sorted(facturas, key=lambda x: x.fecha))
 print('Total Facturado:', total)
+dump_to_csv(facturas)
+dump_to_json(facturas)
