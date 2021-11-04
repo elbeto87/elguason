@@ -25,9 +25,11 @@ def read(pdf_path: str) -> Factura:
     fecha_date = datetime.datetime.strptime(fecha, '%d/%m/%Y').date()
     return Factura(fecha=fecha_date, monto=int(monto))
 
+
 facturas = []
 for pdf in glob.glob('*.pdf'):
     facturas.append(read(pdf))
 
-
+total = sum(x.monto for x in facturas)
 print(sorted(facturas, key=lambda x: x.fecha))
+print('Total Facturado:', total)

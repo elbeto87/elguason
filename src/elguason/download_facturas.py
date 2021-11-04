@@ -36,7 +36,7 @@ def run(playwright: Playwright) -> None:
 
         download = download_info.value
         download.save_as(download.suggested_filename)
-        import time; time.sleep(1.5)
+        import time; time.sleep(1)
 
     context.close()
     browser.close()

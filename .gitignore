@@ -142,3 +142,4 @@ venv/
 .venv/
 .idea/
 .vscode/
+*.pdf
