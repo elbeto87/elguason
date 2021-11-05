@@ -18,7 +18,7 @@ Despues de instalar con `flit install` se pueden usar los siguientes comandos
 > Emite una factura de forma automatica, recibiendo el monto, el servicio, y el destinatario del mismo.
 
 ### `download START END --destination comprobantes`
-> Descarga facturas emitidas desde START hasta END y las guarda en el destino especificado
+> Descarga facturas emitidas desde la fecha START hasta la fecha END y las guarda en el destino especificado
 
 ### `report comprobantes --destination reports`
 > Escribe un reporte csv y json a partir de la carpeta donde se encuentran las facturas
