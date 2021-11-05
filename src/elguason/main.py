@@ -93,8 +93,9 @@ def generar_factura(config, page1):
     servicios = "2"
     page1.select_option("select[name=\"idConcepto\"]", servicios)
 
-    # Completamos la fecha de la factura. Normalmente va a ser la del dia de 'hoy'
+    # Completamos la fecha de la factura. Normalmente va a ser la del dia de 'hoy' y no haria falta
     # Pero tambien puede ser la de 10 dias antes (limite de facturacion retroactiva de servicios)
+    # Entonces la llenamos siempre, incluso si ya esta en el valor deseado.
     date_str = config.date.strftime('%d/%m/%Y')
     page1.fill("input[name=\"periodoFacturadoDesde\"]", date_str)
     page1.fill("input[name=\"periodoFacturadoHasta\"]", date_str)
