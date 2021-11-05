@@ -1,10 +1,14 @@
+import datetime
 import os
+import sys
+
 import click
 from dotenv import load_dotenv
 import getpass
 
 from .main import FacturacionParameters, facturar
-
+from .download_facturas import download_comprobantes, DownloadComprobantesConfig
+from .facturacion_report import report_from_pdfs
 
 load_dotenv()
 
@@ -32,5 +36,60 @@ def myfactura(monto, servicio, cuil, facturador, cuitdestino, autoconfirm, ptove
     facturar(config=config)
 
 
+@click.command()
+@click.argument('start')
+@click.argument('end')
+@click.option('--cuil', default=os.getenv('CUIL'))
+@click.option('--facturador', default=os.getenv('FACTURADOR'), help='Name as it is on AFIP, case sensitive')
+@click.option('--destination', help='Destination folder of pdfs', default=os.getcwd())
+@click.option('--autoconfirm', default=False, help='Autoconfirm without user interaction required')
+def download_facturas(cuil, facturador, start, end, autoconfirm, destination):
+    """Download invoces from START date to END date. Dates must be on dd/mm/YYYY format.
+
+    Example:
+
+        download "01/10/2021" "31/10/2021" --destionation comprobantes
+    """
+    passwd = os.getenv('PASSWORD') or getpass.getpass(f'Password (Hidden input): ')
+    try:
+        start_date = datetime.datetime.strptime(start, '%d/%m/%Y').date()
+        end_date = datetime.datetime.strptime(end, '%d/%m/%Y').date()
+    except ValueError:
+        print('La fecha ingresada no respeta el formato. Ejemplo: 17/03/2021')
+        sys.exit(0)
+
+    os.makedirs(destination, exist_ok=True)
+    savepath = download_comprobantes(config=DownloadComprobantesConfig(
+        cuil=cuil,
+        password=passwd,
+        facturador_name=facturador,
+        start_date=start_date,
+        end_date=end_date,
+        askconfirmation=not autoconfirm,
+        download_folder=destination or os.getcwd()
+    ))
+    click.echo(f"Comprobantes saved at {savepath}")
+
+
+@click.command()
+@click.argument('comprobantespath')
+@click.option('--destination', help='Destination to save csv and json report', default=os.getcwd())
+def build_report(comprobantespath, destination):
+    """Build reports from pdfs stored in folder COMPROBANTESPATH
+
+    Example:
+
+        report comprobantes --destionation reports
+    """
+    folder = report_from_pdfs(comprobantespath, destination)
+    click.echo(f"Reports saved at {folder}")
+
+
 if __name__ == "__main__":
-    myfactura()
+    arg = sys.argv[1:]
+    if 'f' in arg:
+        myfactura()
+    if 'd' in arg:
+        download_facturas()
+    if 'r' in arg:
+        build_report()

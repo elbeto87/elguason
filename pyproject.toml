@@ -23,3 +23,5 @@ dynamic = ['version']
 
 [project.scripts]
 facturar = "elguason.cli:myfactura"
+download = "elguason.cli:download_facturas"
+report = "elguason.cli:build_report"
