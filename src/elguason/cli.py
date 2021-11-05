@@ -5,8 +5,9 @@ import sys
 import click
 from dotenv import load_dotenv
 import getpass
+import csv
 
-from .main import FacturacionParameters, facturar
+from .main import FacturacionParameters, facturar, facturar_multiples
 from .download_facturas import download_comprobantes, DownloadComprobantesConfig
 from .facturacion_report import report_from_pdfs
 
@@ -22,7 +23,7 @@ load_dotenv()
 @click.option('--ptoventa', default=1)
 @click.option('--autoconfirm', default=False)
 def myfactura(monto, servicio, cuil, facturador, cuitdestino, autoconfirm, ptoventa):
-    passwd = os.getenv('PASSWORD') or getpass.getpass(f'Password (Hidden input): ')
+    passwd = _read_password()
     config = FacturacionParameters(
         cuil=cuil,
         password=passwd,
@@ -50,7 +51,7 @@ def download_facturas(cuil, facturador, start, end, autoconfirm, destination):
 
         download "01/10/2021" "31/10/2021" --destionation comprobantes
     """
-    passwd = os.getenv('PASSWORD') or getpass.getpass(f'Password (Hidden input): ')
+    passwd = _read_password()
     try:
         start_date = datetime.datetime.strptime(start, '%d/%m/%Y').date()
         end_date = datetime.datetime.strptime(end, '%d/%m/%Y').date()
@@ -83,6 +84,51 @@ def build_report(comprobantespath, destination):
     """
     folder = report_from_pdfs(comprobantespath, destination)
     click.echo(f"Reports saved at {folder}")
+
+
+@click.command()
+@click.argument('csvpath')
+@click.option('--cuil', default=os.getenv('CUIL'))
+@click.option('--facturador', default=os.getenv('FACTURADOR'))
+@click.option('--autoconfirm', default=False)
+def facturar_from_monthly_csv(csvpath, cuil, facturador, autoconfirm):
+    """Emite facturas dado lo especificado en CSVPATH
+
+    El csv debe tener la siguiente estructura:
+
+        fecha,servicio,monto,cuit_destino,punto_de_venta
+        01/01/2021,Honorarios,12300,,,
+
+    Tanto cuit destino como punto de venta son opcionales.
+    cuit_destino defaultea a vacia
+    punto_de_venta a 1, que es el caso comun de un unico punto de venta
+    """
+    # TODO: Pensar si es posible/deseable evitar facturar algo ya facturado.
+    # Este metodo NO es idempotente. Usar con mucho cuidado..
+    facturas = []
+    password = _read_password()
+    with open(csvpath, 'r') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            facturas.append(
+                FacturacionParameters(
+                    cuil=cuil,
+                    password=password,
+                    facturador_name=facturador,
+                    date=datetime.datetime.strptime(row['fecha'], '%d/%m/%Y').date(),
+                    service_name=row['servicio'],
+                    service_amount=int(row['monto']),
+                    cuit_receptor=row['cuit_destino'],
+                    punto_de_venta=row['punto_de_venta'] or 1,
+                    askconfirmation=not autoconfirm,
+                )
+            )
+
+    facturar_multiples(cuil, password, facturas)
+
+
+def _read_password():
+    return os.getenv('PASSWORD') or getpass.getpass(f'Password (Hidden input): ')
 
 
 if __name__ == "__main__":

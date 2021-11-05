@@ -25,3 +25,4 @@ dynamic = ['version']
 facturar = "elguason.cli:myfactura"
 download = "elguason.cli:download_facturas"
 report = "elguason.cli:build_report"
+micontador = "elguason.cli:facturar_from_monthly_csv"
