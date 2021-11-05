@@ -1,10 +1,9 @@
 import datetime
 from dataclasses import dataclass
 import time
-from decimal import Decimal
 from typing import List
 
-from playwright.sync_api import Playwright, sync_playwright
+from playwright.sync_api import sync_playwright
 
 
 @dataclass
@@ -13,7 +12,7 @@ class FacturacionParameters:
     password: str
     facturador_name: str
     service_name: str
-    service_amount: Decimal
+    service_amount: int
     cuit_receptor: str
     punto_de_venta: int
     askconfirmation: bool = True
@@ -31,26 +30,31 @@ LIMITE_FACTURACION_ANONIMA = 12500
 
 
 def run_facturacion(
-    plwright: Playwright,
+    browser,
     config: FacturacionParameters,
 ) -> None:
     today = datetime.datetime.today().date()
     validate_config(today, config)
 
-    browser = plwright.chromium.launch(headless=False, slow_mo=1000)
     context = browser.new_context(
         accept_downloads=True,
         user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)"
     )
-    page = login(config, context)
+    page = login(config.cuil, config.password, context)
     page1 = enter_facturacion_microsite(page)
 
+    elegir_facturador(config, page1)
     generar_factura(config, page1)
     confirmar_factura(config, page1)
     descargar_factura(page1)
 
     context.close()
-    browser.close()
+
+
+def elegir_facturador(config, page1):
+    facturador = config.facturador_name.upper()
+    print(f'Buscando boton de monotributista para el cual tributar con nombre {facturador}')
+    page1.click(f"input[role=\"button\"]:has-text(\"{facturador}\")")
 
 
 def descargar_factura(page1):
@@ -74,14 +78,12 @@ def confirmar_factura(config, page1):
 
 
 def generar_factura(config, page1):
-    facturador = config.facturador_name.upper()
-    print(f'Buscando boton de monotributista para el cual tributar con nombre {facturador}')
-    page1.click(f"input[role=\"button\"]:has-text(\"{facturador}\")")
     page1.click("a[role=\"button\"]:has-text(\"Generar Comprobantes\")")
     print('Eligiendo punto de venta y tipo de factura')
     page1.select_option("select[name=\"puntoDeVenta\"]", str(config.punto_de_venta))
     # Wait it automatically selects Factura C on second dropdown menu
     time.sleep(2)
+
     page1.click("text=Continuar >")
     print('Ingresando servicio como tipo de facturacion')
     # Facturacion de Servicios
@@ -124,14 +126,14 @@ def enter_facturacion_microsite(page):
     return page1
 
 
-def login(config, context):
+def login(cuil, password, context):
     print('Abriendo página monotributo..')
     page = context.new_page()
     page.goto("https://auth.afip.gov.ar/contribuyente_/login.xhtml?action=SYSTEM&system=admin_mono")
     print('Ingresando al sitio..')
-    page.fill("input[name=\"F1:username\"]", config.cuil)
+    page.fill("input[name=\"F1:username\"]", cuil)
     page.press("input[name=\"F1:username\"]", "Enter")
-    page.fill("input[name=\"F1:password\"]", config.password)
+    page.fill("input[name=\"F1:password\"]", password)
     with page.expect_navigation():
         page.press("input[name=\"F1:password\"]", "Enter")
 
@@ -153,11 +155,32 @@ def validate_config(today, config):
 def facturar(config: FacturacionParameters):
     with sync_playwright() as playwright:
         print("Inicio de facturacion 📝")
-        run_facturacion(playwright, config=config)
+        browser = playwright.chromium.launch(headless=False, slow_mo=1000)
+        run_facturacion(browser, config=config)
+        browser.close()
         print("Facturacion finalizada ✨")
 
 
-def facturar_multiples(facturaciones_por_dia: List[FacturacionParameters]):
-    # TODO: Codegen browser to generate multiple facturas at once
-    # Or perhaps just invoke the same run script N times.
-    pass
+def facturar_multiples(cuil, password, facturaciones_por_dia: List[FacturacionParameters]):
+    today = datetime.datetime.today().date()
+    for facturacion_config in facturaciones_por_dia:
+        validate_config(today, facturacion_config)
+
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(headless=False, slow_mo=1000)
+        context = browser.new_context(
+            accept_downloads=True,
+            user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)"
+        )
+        page = login(cuil, password, context)
+        page1 = enter_facturacion_microsite(page)
+        for config in facturaciones_por_dia:
+            print(f'Emitiendo factura {config}')
+            generar_factura(config, page1)
+            confirmar_factura(config, page1)
+            descargar_factura(page1)
+
+            # Go back to main menu and start with the next invoice/factura
+            page1.click("text=Menú Principal")
+            print('Sleeping to simulate human behaviour')
+            time.sleep(5)

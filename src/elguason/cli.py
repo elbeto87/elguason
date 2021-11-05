@@ -104,26 +104,26 @@ def facturar_from_monthly_csv(csvpath, cuil, facturador, autoconfirm):
     punto_de_venta a 1, que es el caso comun de un unico punto de venta
     """
     # TODO: Prevenir doble facturacion.
-    facturaciones = []
+    facturas = []
     password = _read_password()
     with open(csvpath, 'r') as f:
         reader = csv.DictReader(f)
         for row in reader:
-            facturaciones.append(
+            facturas.append(
                 FacturacionParameters(
                     cuil=cuil,
                     password=password,
                     facturador_name=facturador,
-                    date=row['fecha'],
+                    date=datetime.datetime.strptime(row['fecha'], '%d/%m/%Y').date(),
                     service_name=row['servicio'],
-                    service_amount=row['monto'],
+                    service_amount=int(row['monto']),
                     cuit_receptor=row['cuit_destino'],
-                    punto_de_venta=row['punto_de_venta'],
+                    punto_de_venta=row['punto_de_venta'] or 1,
                     askconfirmation=not autoconfirm,
                 )
             )
 
-    facturar_multiples(facturaciones)
+    facturar_multiples(cuil, password, facturas)
 
 
 def _read_password():
