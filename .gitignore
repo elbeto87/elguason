@@ -143,3 +143,5 @@ venv/
 .idea/
 .vscode/
 *.pdf
+*.csv
+
