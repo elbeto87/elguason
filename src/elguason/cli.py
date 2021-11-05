@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 import getpass
 import csv
 
-from .main import FacturacionParameters, facturar, FacturacionProgramada, facturar_multiples
+from .main import FacturacionParameters, facturar, facturar_multiples
 from .download_facturas import download_comprobantes, DownloadComprobantesConfig
 from .facturacion_report import report_from_pdfs
 
@@ -92,27 +92,38 @@ def build_report(comprobantespath, destination):
 @click.option('--facturador', default=os.getenv('FACTURADOR'))
 @click.option('--autoconfirm', default=False)
 def facturar_from_monthly_csv(csvpath, cuil, facturador, autoconfirm):
+    """Emite facturas dado lo especificado en CSVPATH
+
+    El csv debe tener la siguiente estructura:
+
+        fecha,servicio,monto,cuit_destino,punto_de_venta
+        01/01/2021,Honorarios,12300,,,
+
+    Tanto cuit destino como punto de venta son opcionales.
+    cuit_destino defaultea a vacia
+    punto_de_venta a 1, que es el caso comun de un unico punto de venta
+    """
     # TODO: Prevenir doble facturacion.
     facturaciones = []
+    password = _read_password()
     with open(csvpath, 'r') as f:
         reader = csv.DictReader(f)
-        facturaciones = [
-            FacturacionProgramada(
-                date=row['fecha'],
-                factura=FacturacionParameters(
+        for row in reader:
+            facturaciones.append(
+                FacturacionParameters(
                     cuil=cuil,
-                    password=_read_password(),
+                    password=password,
                     facturador_name=facturador,
+                    date=row['fecha'],
                     service_name=row['servicio'],
                     service_amount=row['monto'],
                     cuit_receptor=row['cuit_destino'],
                     punto_de_venta=row['punto_de_venta'],
+                    askconfirmation=not autoconfirm,
                 )
-            ) for row in reader
-        ]
+            )
 
-    for f in facturaciones:
-        print(f.date, f.factura)
+    facturar_multiples(facturaciones)
 
 
 def _read_password():
