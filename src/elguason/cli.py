@@ -41,14 +41,14 @@ def myfactura(monto, servicio, cuil, facturador, cuitdestino, autoconfirm, ptove
 @click.argument('end')
 @click.option('--cuil', default=os.getenv('CUIL'))
 @click.option('--facturador', default=os.getenv('FACTURADOR'), help='Name as it is on AFIP, case sensitive')
-@click.option('--destination', help='Destination path of pdfs')
+@click.option('--destination', help='Destination folder of pdfs', default=os.getcwd())
 @click.option('--autoconfirm', default=False, help='Autoconfirm without user interaction required')
 def download_facturas(cuil, facturador, start, end, autoconfirm, destination):
     """Download invoces from START date to END date. Dates must be on dd/mm/YYYY format.
 
     Example:
 
-        download "01/10/2021" "31/10/2021"
+        download "01/10/2021" "31/10/2021" --destionation comprobantes
     """
     passwd = os.getenv('PASSWORD') or getpass.getpass(f'Password (Hidden input): ')
     try:
@@ -58,9 +58,7 @@ def download_facturas(cuil, facturador, start, end, autoconfirm, destination):
         print('La fecha ingresada no respeta el formato. Ejemplo: 17/03/2021')
         sys.exit(0)
 
-    if destination:
-        os.makedirs(destination, exist_ok=True)
-
+    os.makedirs(destination, exist_ok=True)
     savepath = download_comprobantes(config=DownloadComprobantesConfig(
         cuil=cuil,
         password=passwd,
@@ -77,7 +75,12 @@ def download_facturas(cuil, facturador, start, end, autoconfirm, destination):
 @click.argument('comprobantespath')
 @click.option('--destination', help='Destination to save csv and json report', default=os.getcwd())
 def build_report(comprobantespath, destination):
-    """Build reports from pdfs stored in folder COMPROBANTESPATH"""
+    """Build reports from pdfs stored in folder COMPROBANTESPATH
+
+    Example:
+
+        report comprobantes --destionation reports
+    """
     folder = report_from_pdfs(comprobantespath, destination)
     click.echo(f"Reports saved at {folder}")
 
