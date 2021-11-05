@@ -51,7 +51,7 @@ def download_facturas(cuil, facturador, start, end, autoconfirm, destination):
 
         download "01/10/2021" "31/10/2021" --destionation comprobantes
     """
-    passwd = os.getenv('PASSWORD') or getpass.getpass(f'Password (Hidden input): ')
+    passwd = _read_password()
     try:
         start_date = datetime.datetime.strptime(start, '%d/%m/%Y').date()
         end_date = datetime.datetime.strptime(end, '%d/%m/%Y').date()
@@ -103,7 +103,7 @@ def facturar_from_monthly_csv(csvpath, cuil, facturador, autoconfirm):
     cuit_destino defaultea a vacia
     punto_de_venta a 1, que es el caso comun de un unico punto de venta
     """
-    # TODO: Prevenir doble facturacion.
+    # TODO: Es posible prevenir doble facturacion.
     facturas = []
     password = _read_password()
     with open(csvpath, 'r') as f:
