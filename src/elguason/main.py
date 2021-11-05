@@ -8,12 +8,6 @@ from playwright.sync_api import Playwright, sync_playwright
 
 
 @dataclass
-class FacturacionProgramada:
-    date: datetime.date
-    factura: 'FacturacionParameters'
-
-
-@dataclass
 class FacturacionParameters:
     cuil: str
     password: str
@@ -34,7 +28,7 @@ class FacturacionParameters:
 LIMITE_FACTURACION_ANONIMA = 12500
 
 
-def run(
+def run_facturacion(
     plwright: Playwright,
     config: FacturacionParameters,
 ) -> None:
@@ -145,7 +139,7 @@ def run(
 def facturar(config: FacturacionParameters):
     with sync_playwright() as playwright:
         print("Inicio de facturacion 📝")
-        run(playwright, config=config)
+        run_facturacion(playwright, config=config)
         print("Facturacion finalizada ✨")
 
 
