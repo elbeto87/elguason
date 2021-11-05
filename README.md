@@ -7,8 +7,8 @@
 ## Setup
 ```
 cp .env.sample .env
-# fill with your CUIL, PASSWORD and your name as it's seen while clicking on 'emitir factura'
-# Usually SURNAME NAME all uppercase.
+# fill with your CUIL, PASSWORD and your FACTURADOR name as it's seen while clicking on 'emitir factura'
+# If you have more than one Point of Sale, you can also set PUNTO_DE_VENTA
 ```
 
 ## Como usarlo?
