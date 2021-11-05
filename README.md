@@ -11,16 +11,14 @@ cp .env.sample .env
 # Usually SURNAME NAME all uppercase.
 ```
 
-## Usage
-After successfull installation, and alias is stored under `facturar` so run:
-```
-facturar
-```
-And you should see something like..
-```
-Ingresa el titulo del servicio a facturar [Servicios Profesionales]: Mantenimiento Pc
-Ingresa el monto a facturar [10000]: 5200
-Inicio de facturacion 📝
-Abriendo página monotributo..
-Ingresando al sitio..
-```
+## Como usarlo?
+Despues de instalar con `flit install` se pueden usar los siguientes comandos
+
+### `facturar`
+> Emite una factura de forma automatica, recibiendo el monto, el servicio, y el destinatario del mismo.
+
+### `download START END --destination comprobantes`
+> Descarga facturas emitidas desde START hasta END y las guarda en el destino especificado
+
+### `report comprobantes --destination reports`
+> Escribe un reporte csv y json a partir de la carpeta donde se encuentran las facturas
