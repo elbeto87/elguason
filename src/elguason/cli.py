@@ -68,7 +68,7 @@ def download_facturas(cuil, facturador, start, end, autoconfirm, destination):
         askconfirmation=not autoconfirm,
         download_folder=destination or os.getcwd()
     ))
-    click.echo(f"Comprobantes saved into {savepath}")
+    click.echo(f"Comprobantes saved at {savepath}")
 
 
 @click.command()
