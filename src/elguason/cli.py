@@ -103,7 +103,8 @@ def facturar_from_monthly_csv(csvpath, cuil, facturador, autoconfirm):
     cuit_destino defaultea a vacia
     punto_de_venta a 1, que es el caso comun de un unico punto de venta
     """
-    # TODO: Es posible prevenir doble facturacion.
+    # TODO: Pensar si es posible/deseable evitar facturar algo ya facturado.
+    # Este metodo NO es idempotente. Usar con mucho cuidado..
     facturas = []
     password = _read_password()
     with open(csvpath, 'r') as f:
