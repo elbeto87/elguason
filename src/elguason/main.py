@@ -51,30 +51,33 @@ def run_facturacion(
     context.close()
 
 
+def login(cuil, password, context):
+    print('Abriendo página monotributo..')
+    page = context.new_page()
+    page.goto("https://auth.afip.gov.ar/contribuyente_/login.xhtml?action=SYSTEM&system=admin_mono")
+    print('Ingresando al sitio..')
+    page.fill("input[name=\"F1:username\"]", cuil)
+    page.press("input[name=\"F1:username\"]", "Enter")
+    page.fill("input[name=\"F1:password\"]", password)
+    with page.expect_navigation():
+        page.press("input[name=\"F1:password\"]", "Enter")
+
+    return page
+
+
+def enter_facturacion_microsite(page):
+    print('Ingresando a micrositio de facturación')
+    with page.expect_navigation():
+        with page.expect_popup() as popup_info:
+            page.click("text=Emitir Factura")
+        page1 = popup_info.value
+    return page1
+
+
 def elegir_facturador(config, page1):
     facturador = config.facturador_name.upper()
     print(f'Buscando boton de monotributista para el cual tributar con nombre {facturador}')
     page1.click(f"input[role=\"button\"]:has-text(\"{facturador}\")")
-
-
-def descargar_factura(page1):
-    # Imprimir comprobante con nombre autogenerado por AFIP
-    with page1.expect_download() as download_info:
-        page1.click("text=Imprimir...")
-    download = download_info.value
-    download.save_as(download.suggested_filename)
-    print(f"File saved @ {download.suggested_filename}")
-
-
-def confirmar_factura(config, page1):
-    if config.askconfirmation:
-        resp = input('Presiona ENTER para facturar, o cualquier otra tecla para cancelar\n')
-        if resp != '':
-            print('Cancelando Facturacion')
-            exit(0)
-    # Clickear confirmar y aceptar el popup
-    page1.once("dialog", lambda dialog: dialog.accept())
-    page1.click("text=Confirmar Datos...")
 
 
 def generar_factura(config, page1):
@@ -117,27 +120,24 @@ def generar_factura(config, page1):
     page1.click("text=Continuar >")
 
 
-def enter_facturacion_microsite(page):
-    print('Ingresando a micrositio de facturación')
-    with page.expect_navigation():
-        with page.expect_popup() as popup_info:
-            page.click("text=Emitir Factura")
-        page1 = popup_info.value
-    return page1
+def confirmar_factura(config, page1):
+    if config.askconfirmation:
+        resp = input('Presiona ENTER para facturar, o cualquier otra tecla para cancelar\n')
+        if resp != '':
+            print('Cancelando Facturacion')
+            exit(0)
+    # Clickear confirmar y aceptar el popup
+    page1.once("dialog", lambda dialog: dialog.accept())
+    page1.click("text=Confirmar Datos...")
 
 
-def login(cuil, password, context):
-    print('Abriendo página monotributo..')
-    page = context.new_page()
-    page.goto("https://auth.afip.gov.ar/contribuyente_/login.xhtml?action=SYSTEM&system=admin_mono")
-    print('Ingresando al sitio..')
-    page.fill("input[name=\"F1:username\"]", cuil)
-    page.press("input[name=\"F1:username\"]", "Enter")
-    page.fill("input[name=\"F1:password\"]", password)
-    with page.expect_navigation():
-        page.press("input[name=\"F1:password\"]", "Enter")
-
-    return page
+def descargar_factura(page1):
+    # Imprimir comprobante con nombre autogenerado por AFIP
+    with page1.expect_download() as download_info:
+        page1.click("text=Imprimir...")
+    download = download_info.value
+    download.save_as(download.suggested_filename)
+    print(f"File saved @ {download.suggested_filename}")
 
 
 def validate_config(today, config):
@@ -174,13 +174,20 @@ def facturar_multiples(cuil, password, facturaciones_por_dia: List[FacturacionPa
         )
         page = login(cuil, password, context)
         page1 = enter_facturacion_microsite(page)
-        for config in facturaciones_por_dia:
-            print(f'Emitiendo factura {config}')
-            generar_factura(config, page1)
-            confirmar_factura(config, page1)
-            descargar_factura(page1)
+        repeat_facturacion(page1, facturaciones_por_dia)
 
-            # Go back to main menu and start with the next invoice/factura
-            page1.click("text=Menú Principal")
-            print('Sleeping to simulate human behaviour')
-            time.sleep(5)
+        context.close()
+        browser.close()
+
+
+def repeat_facturacion(page1, facturaciones_por_dia):
+    for config in facturaciones_por_dia:
+        print(f'Emitiendo factura {config}')
+        generar_factura(config, page1)
+        confirmar_factura(config, page1)
+        descargar_factura(page1)
+
+        # Go back to main menu and start with the next invoice/factura
+        page1.click("text=Menú Principal")
+        print('Sleeping to simulate human behaviour')
+        time.sleep(5)
