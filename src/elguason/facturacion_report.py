@@ -2,6 +2,7 @@ import csv
 import datetime
 import glob
 import json
+import os.path
 import re
 import warnings
 from dataclasses import dataclass
@@ -17,7 +18,7 @@ class Factura:
     fecha: datetime.date
 
 
-def read(pdf_path: str) -> Factura:
+def extract_info_factura_from_pdf(pdf_path: str) -> Factura:
     """Dado un pdf de factura C de AFIP, obtiene su monto y la fecha de facturacion"""
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=PDFTextExtractionNotAllowedWarning)
@@ -30,34 +31,40 @@ def read(pdf_path: str) -> Factura:
     return Factura(fecha=fecha_date, monto=int(monto))
 
 
-facturas = []
-for pdf in glob.glob('*.pdf'):
-    facturas.append(read(pdf))
-
-
-def dump_to_csv(facturas: List[Factura], facturas_csv_path='facturas.csv'):
-    with open(facturas_csv_path, 'w') as f:
+def dump_to_csv(facturas: List[Factura], saveas='facturas.csv'):
+    facturas.sort(key=lambda x: x.fecha)
+    with open(saveas, 'w') as f:
         writer = csv.writer(f)
         writer.writerow(['Fecha', 'Monto'])
         for factura in facturas:
             writer.writerow([factura.fecha, factura.monto])
 
-    return facturas_csv_path
+    return saveas
 
 
 def dump_to_json(facturas: List[Factura], saveas='facturas.json'):
-    facturasdict = sorted([
-        {'fecha': factura.fecha.strftime('%d/%m/%Y'), 'monto': factura.monto}
+    facturasjson = [
+        {'fecha': factura.fecha, 'monto': factura.monto}
         for factura in facturas
-    ], key=lambda key: key['fecha'])
+    ]
+    orderedfacturas = sorted(facturasjson, key=lambda x: x['fecha'])
+
     with open(saveas, 'w') as f:
-        json.dump(facturasdict, f, indent=2, ensure_ascii=False)
+        json.dump(orderedfacturas, f, indent=2, ensure_ascii=False,
+                  default=lambda x: x.strftime('%Y/%m/%d'))
 
     return saveas
 
 
-total = sum(x.monto for x in facturas)
-print(sorted(facturas, key=lambda x: x.fecha))
-print('Total Facturado:', total)
-dump_to_csv(facturas)
-dump_to_json(facturas)
+def report_from_pdfs(folder: str, report_folder='reports'):
+    files = glob.glob(f'{folder}/*.pdf')
+    if not files:
+        print(f'No hay PDFs de facturas en la carpeta indicada ({folder})')
+        return
+
+    facturas = [extract_info_factura_from_pdf(f) for f in files]
+    os.makedirs(report_folder, exist_ok=True)
+    date = datetime.datetime.today().date()
+    dump_to_csv(facturas, saveas=f'{report_folder}/facturas-{date}.csv')
+    dump_to_json(facturas, saveas=f'{report_folder}/facturas-{date}.json')
+    return report_folder
