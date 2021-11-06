@@ -2,6 +2,7 @@ import datetime
 import json
 from dataclasses import dataclass
 import time
+from pathlib import Path
 from typing import List
 
 from loguru import logger
@@ -230,12 +231,14 @@ def validate_we_dont_repeat_any_invoice(configs):
 
 def mark_invoices_as_already_billed(configs: List[FacturacionParameters]):
     """We arbitrarily assume one can idenitify an invoice univocally by cuil, date, service, monto and cuit dest"""
-    with open('.facturaciones_realizadas.json', 'r') as f:
+    HERE = Path(__file__).absolute().parent
+    filepath = HERE / '.facturaciones_realizadas.json'
+    with open(filepath, 'r') as f:
         oldfacturas = json.load(f)
 
     newfacturas = [x.to_dict() for x in configs]
     oldfacturas.extend(newfacturas)
-    with open('.facturaciones_realizadas.json', 'w') as f:
+    with open(filepath, 'w') as f:
         json.dump(oldfacturas, f, indent=2, ensure_ascii=False, sort_keys=True)
 
 
