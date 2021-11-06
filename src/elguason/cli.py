@@ -7,9 +7,12 @@ from dotenv import load_dotenv
 import getpass
 import csv
 
+
 from .main import FacturacionParameters, facturar, facturar_multiples
+from .configure_cron import configure
 from .download_facturas import download_comprobantes, DownloadComprobantesConfig
 from .facturacion_report import report_from_pdfs
+
 
 load_dotenv()
 
@@ -87,6 +90,22 @@ def build_report(comprobantespath, destination):
 
 
 @click.command()
+@click.argument('hour')
+@click.argument('spec')
+@click.option('--log', help="Where to store logs for cron runs.", default='~/elguason.log')
+def configure_cron(hour, spec, log):
+    """Configure cron to periodically emit invoices specified by certain csv SPEC at certain HOUR
+
+    Usage:h
+        configure_cron 18 ~/facturacionspec.csv
+    """
+    path = os.path.expanduser(log)
+    cron = configure(hour, spec, path)
+    print(f'✅ Configured new cron as:\n{cron}\n'
+          f'See more details with `crontab -l`')
+
+
+@click.command()
 @click.argument('csvpath')
 @click.option('--cuil', default=os.getenv('CUIL'))
 @click.option('--facturador', default=os.getenv('FACTURADOR'))
@@ -124,7 +143,7 @@ def facturar_from_monthly_csv(csvpath, cuil, facturador, autoconfirm):
                 )
             )
 
-    facturar_multiples(cuil, password, facturas)
+    facturar_multiples(cuil, password, facturador, facturas)
 
 
 def _read_password():
@@ -139,3 +158,7 @@ if __name__ == "__main__":
         download_facturas()
     if 'r' in arg:
         build_report()
+    if 'c' in arg:
+        facturar_from_monthly_csv()
+    if 'r' in arg:
+        configure_cron()
