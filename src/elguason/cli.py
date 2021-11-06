@@ -8,7 +8,7 @@ import getpass
 import csv
 from loguru import logger
 
-from .main import FacturacionParameters, facturar, facturar_multiples
+from .facturar import FacturacionParameters, facturar, facturar_multiples
 from .configure_cron import configure, remove
 from .download_facturas import download_comprobantes, DownloadComprobantesConfig
 from .facturacion_report import report_from_pdfs
@@ -24,9 +24,8 @@ load_dotenv()
 @click.option('--facturador', default=os.getenv('FACTURADOR'))
 @click.option('--cuitdestino', default=None, help="CUIT destinatario si monto excede limite de anonimato")
 @click.option('--ptoventa', default=1)
-@click.option('--allow-billing-past-invoices', help="Set this if you want to bill invoices earlier than today", default=False)
 @click.option('--autoconfirm', default=False)
-def facturar_prompt(monto, servicio, cuil, facturador, cuitdestino, autoconfirm, ptoventa, allow_billing_past_invoices):
+def facturar_prompt(monto, servicio, cuil, facturador, cuitdestino, autoconfirm, ptoventa):
     passwd = _read_password()
     config = FacturacionParameters(
         cuil=cuil,
@@ -116,8 +115,10 @@ def configure_cron(hour, spec, log, unset, allow_billing_past_invoices):
 @click.argument('csvpath')
 @click.option('--cuil', default=os.getenv('CUIL'))
 @click.option('--facturador', default=os.getenv('FACTURADOR'))
+@click.option('--allow-billing-past-invoices', help="Set this if you want to allow billing of services in the past",
+              default=False)
 @click.option('--autoconfirm', default=False)
-def facturar_from_monthly_csv(csvpath, cuil, facturador, autoconfirm):
+def facturar_from_monthly_csv(csvpath, cuil, facturador, autoconfirm, allow_billing_past_invoices):
     """Emite facturas dado lo especificado en CSVPATH
 
     El csv debe tener la siguiente estructura:
@@ -150,7 +151,7 @@ def facturar_from_monthly_csv(csvpath, cuil, facturador, autoconfirm):
                 )
             )
 
-    facturar_multiples(cuil, password, facturador, facturas)
+    facturar_multiples(cuil, password, facturador, facturas, allow_billing_past_invoices)
 
 
 def _read_password():
