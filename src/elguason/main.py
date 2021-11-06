@@ -43,7 +43,7 @@ def run_facturacion(
     page = login(config.cuil, config.password, context)
     page1 = enter_facturacion_microsite(page)
 
-    elegir_facturador(config, page1)
+    elegir_facturador(config.facturador_name, page1)
     generar_factura(config, page1)
     confirmar_factura(config, page1)
     descargar_factura(page1)
@@ -74,8 +74,8 @@ def enter_facturacion_microsite(page):
     return page1
 
 
-def elegir_facturador(config, page1):
-    facturador = config.facturador_name.upper()
+def elegir_facturador(facturador, page1):
+    facturador = facturador.upper()
     print(f'Buscando boton de monotributista para el cual tributar con nombre {facturador}')
     page1.click(f"input[role=\"button\"]:has-text(\"{facturador}\")")
 
@@ -162,7 +162,7 @@ def facturar(config: FacturacionParameters):
         print("Facturacion finalizada ✨")
 
 
-def facturar_multiples(cuil, password, facturaciones_por_dia: List[FacturacionParameters]):
+def facturar_multiples(cuil, password, facturador, facturaciones_por_dia: List[FacturacionParameters]):
     today = datetime.datetime.today().date()
     for facturacion_config in facturaciones_por_dia:
         validate_config(today, facturacion_config)
@@ -175,6 +175,7 @@ def facturar_multiples(cuil, password, facturaciones_por_dia: List[FacturacionPa
         )
         page = login(cuil, password, context)
         page1 = enter_facturacion_microsite(page)
+        elegir_facturador(facturador, page1)
         repeat_facturacion(page1, facturaciones_por_dia)
 
         context.close()
