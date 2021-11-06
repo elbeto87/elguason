@@ -19,7 +19,7 @@ def remove(hour, spec, outputpath):
 
 def configure(hour, spec, outputpath, bill_old_invoices):
     entrypoints_path = Path(sys.executable).parent
-    micontador = str(entrypoints_path / 'micontador')
+    micontador = str(entrypoints_path / 'facturarcsv')
 
     if bill_old_invoices:
         new_command = f'{micontador} {spec} --allow-billing-past-invoices > {outputpath}'
