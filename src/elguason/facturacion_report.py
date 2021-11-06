@@ -8,6 +8,7 @@ import warnings
 from dataclasses import dataclass
 from typing import List
 
+from loguru import logger
 from pdfminer.high_level import extract_text
 from pdfminer.pdfdocument import PDFTextExtractionNotAllowedWarning
 
@@ -59,7 +60,7 @@ def dump_to_json(facturas: List[Factura], saveas='facturas.json'):
 def report_from_pdfs(folder: str, report_folder='reports'):
     files = glob.glob(f'{folder}/*.pdf')
     if not files:
-        print(f'No hay PDFs de facturas en la carpeta indicada ({folder})')
+        logger.info(f'No hay PDFs de facturas en la carpeta indicada ({folder})')
         return
 
     facturas = [extract_info_factura_from_pdf(f) for f in files]
