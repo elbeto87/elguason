@@ -34,9 +34,10 @@ LIMITE_FACTURACION_ANONIMA = 12500
 def run_facturacion(
     browser,
     config: FacturacionParameters,
+    allow_billing_past_invoices: bool,
 ) -> None:
     today = datetime.datetime.today().date()
-    validate_config(today, config)
+    validate_config(today, config, allow_billing_past_invoices)
 
     context = browser.new_context(
         accept_downloads=True,
@@ -143,23 +144,27 @@ def descargar_factura(page1):
     logger.info(f"File saved @ {download.suggested_filename}")
 
 
-def validate_config(today, config):
+def validate_config(today: datetime.date, config, allow_billing_past_invoices: bool):
     if config.service_amount > LIMITE_FACTURACION_ANONIMA and not config.cuit_receptor:
         raise ValueError(f'Para facturar {config.service_amount} se requiere CUIT de consumidor final')
 
     if config.date > today:
         raise ValueError(f"No se puede emitir facturas para el futuro. "
                          f"Hoy es {today}, per la factura es para el {config.date}")
+    if allow_billing_past_invoices is False and config.date < today:
+        raise ValueError("No se puede facturar para días anteriores si no se especifica --allow-billing-past-invoices")
+
     if (today - config.date) > datetime.timedelta(days=10):
         raise ValueError("No se puede facturar servicios realizados hace mas de 10 dias")
+
     return today
 
 
-def facturar(config: FacturacionParameters):
+def facturar(config: FacturacionParameters, allow_billing_past_invoices: bool):
     with sync_playwright() as playwright:
         logger.info("Inicio de facturacion 📝")
         browser = playwright.chromium.launch(headless=False, slow_mo=1000)
-        run_facturacion(browser, config=config)
+        run_facturacion(browser, config=config, allow_billing_past_invoices=allow_billing_past_invoices)
         browser.close()
         logger.info("Facturacion finalizada ✨")
 
