@@ -78,7 +78,7 @@ def enter_facturacion_microsite(page):
 
 def elegir_facturador(facturador, page1):
     facturador = facturador.upper()
-    print(f'Buscando boton de monotributista para el cual tributar con nombre {facturador}')
+    logger.info(f'Buscando boton de monotributista para el cual tributar con nombre {facturador}')
     page1.click(f"input[role=\"button\"]:has-text(\"{facturador}\")")
 
 

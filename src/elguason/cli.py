@@ -6,7 +6,6 @@ import click
 from dotenv import load_dotenv
 import getpass
 import csv
-
 from loguru import logger
 
 from .main import FacturacionParameters, facturar, facturar_multiples
@@ -102,8 +101,8 @@ def configure_cron(hour, spec, log):
     """
     path = os.path.expanduser(log)
     cron = configure(hour, spec, path)
-    print(f'✅ Configured new cron as:\n{cron}\n'
-          f'See more details with `crontab -l`')
+    logger.info(f'✅ Configured new cron as:\n{cron}\n'
+                f'See more details with `crontab -l`')
 
 
 @click.command()
