@@ -45,6 +45,8 @@ class FacturacionParameters:
 
 
 LIMITE_FACTURACION_ANONIMA = 12500
+HERE = Path(__file__).absolute().parent
+invoicespath = HERE / '.facturaciones_realizadas.json'
 
 
 def facturar(config: FacturacionParameters):
@@ -208,7 +210,7 @@ def descargar_factura(page1):
     logger.info(f"File saved @ {download.suggested_filename}")
 
 
-def validate_facturacion_config(config, allow_billing_past_invoices: bool):
+def validate_facturacion_config(config: FacturacionParameters, allow_billing_past_invoices: bool):
     today = datetime.datetime.today().date()
     if config.service_amount > LIMITE_FACTURACION_ANONIMA and not config.cuit_receptor:
         raise ValueError(f'Para facturar {config.service_amount} se requiere CUIT de consumidor final')
@@ -225,26 +227,24 @@ def validate_facturacion_config(config, allow_billing_past_invoices: bool):
     return today
 
 
-def validate_we_dont_repeat_any_invoice(configs):
+def validate_we_dont_repeat_any_invoice(configs: List[FacturacionParameters]):
     """Perhaps delegate logic into class??"""
-    with open('.facturaciones_realizadas.json', 'r') as f:
+    with open(invoicespath, 'r') as f:
         oldfacturas = json.load(f)
 
     for config in configs:
-        if config.to_dict() in  oldfacturas:
+        if config.to_dict() in oldfacturas:
             raise ValueError(f"{config} was already billed. Aborting because we can't allow double billing")
 
 
 def mark_invoices_as_already_billed(configs: List[FacturacionParameters]):
     """We arbitrarily assume one can idenitify an invoice univocally by cuil, date, service, monto and cuit dest"""
-    HERE = Path(__file__).absolute().parent
-    filepath = HERE / '.facturaciones_realizadas.json'
-    with open(filepath, 'r') as f:
+    with open(invoicespath, 'r') as f:
         oldfacturas = json.load(f)
 
     newfacturas = [x.to_dict() for x in configs]
     oldfacturas.extend(newfacturas)
-    with open(filepath, 'w') as f:
+    with open(invoicespath, 'w') as f:
         json.dump(oldfacturas, f, indent=2, ensure_ascii=False, sort_keys=True)
 
 
