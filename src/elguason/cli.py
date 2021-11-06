@@ -9,7 +9,7 @@ import csv
 from loguru import logger
 
 from .facturar import FacturacionParameters, facturar, facturar_multiples
-from .configure_cron import configure, remove
+from .configure_cron import configure
 from .download_facturas import download_comprobantes, DownloadComprobantesConfig
 from .facturacion_report import report_from_pdfs
 
@@ -68,7 +68,7 @@ def facturar_from_monthly_csv(csvpath, cuil, facturador, autoconfirm, allow_bill
                 FacturacionParameters(
                     cuil=cuil,
                     password=password,
-                    facturador_name=facturador,
+                    facturador=facturador,
                     date=datetime.datetime.strptime(row['fecha'], '%d/%m/%Y').date(),
                     service_name=row['servicio'],
                     service_amount=int(row['monto']),
@@ -133,23 +133,19 @@ def build_report(comprobantespath, destination):
 @click.command()
 @click.argument('hour')
 @click.argument('spec')
-@click.option('--unset', help="Delete cron", is_flag=True, default=False)
 @click.option('--log', help="Where to store logs for cron runs.", default='~/elguason.log')
-@click.option('--allow-billing-past-invoices', help="Set this if you want to bill invoices earlier than today", default=False)
-def configure_cron(hour, spec, log, unset, allow_billing_past_invoices):
+@click.option('--allow-billing-past-invoices', help="Set this if you want to bill invoices earlier than today",
+              default=False)
+def configure_cron(hour, spec, log, allow_billing_past_invoices):
     """Configure cron to periodically emit invoices specified by certain csv SPEC at certain HOUR
 
     Usage:h
         configure_cron 18 ~/facturacionspec.csv
     """
     path = os.path.expanduser(log)
-    if unset:
-        remove(hour, spec, path, allow_billing_past_invoices)
-        logger.info("✅ Cron was removed")
-    else:
-        cron = configure(hour, spec, path, allow_billing_past_invoices)
-        logger.info(f'✅ Configured new cron as:\n{cron}\n'
-                    f'See more details with `crontab -l`')
+    cron = configure(hour, spec, path, allow_billing_past_invoices)
+    logger.info(f'✅ Configured new cron as:\n{cron}\n'
+                f'See more details with `crontab -l`')
 
 
 def _read_password():
