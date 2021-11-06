@@ -17,13 +17,13 @@ Despues de instalar con `flit install` se pueden usar los siguientes comandos
 ### `facturar`
 > Emite una factura de forma automatica, recibiendo el monto, el servicio, y el destinatario del mismo.
 
-### `facturarcsv csvspec`
+### `facturarcsv CSVSPEC`
 > Emite multiples factures segun lo especificado en el csv ingresado
 
-### `download START END --destination comprobantes`
+### `download START END --destination COMPROBANTESPATH`
 > Descarga facturas emitidas desde START hasta END y las guarda en el destino especificado
 
-### `report comprobantes --destination reports`
+### `report COMPROBANTESPATH --destination reports`
 > Escribe un reporte csv y json a partir de la carpeta donde se encuentran las facturas
 
 ### `crontador HOUR CSVSPEC`
