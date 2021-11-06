@@ -46,13 +46,40 @@ class FacturacionParameters:
 LIMITE_FACTURACION_ANONIMA = 12500
 
 
+def facturar(config: FacturacionParameters):
+    with sync_playwright() as playwright:
+        logger.info("Inicio de facturacion 📝")
+        browser = playwright.chromium.launch(headless=False, slow_mo=1000)
+        run_facturacion(browser, config=config)
+        browser.close()
+        logger.info("Facturacion finalizada ✨")
+
+
+def facturar_multiples(
+        cuil, password, facturador,
+        facturaciones_por_dia: List[FacturacionParameters],
+        allow_billing_past_invoices: bool
+):
+    validate_we_dont_repeat_any_invoice(facturaciones_por_dia)
+
+    today = datetime.datetime.today().date()
+    for facturacion_config in facturaciones_por_dia:
+        validate_facturacion_config(today, facturacion_config, allow_billing_past_invoices)
+
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(headless=False, slow_mo=1000)
+        run_facturacion_multiple(browser, cuil, password, facturador, facturaciones_por_dia)
+        browser.close()
+
+    mark_invoices_as_already_billed(facturaciones_por_dia)
+
+
 def run_facturacion(
     browser,
     config: FacturacionParameters,
-    allow_billing_past_invoices: bool,
 ) -> None:
     today = datetime.datetime.today().date()
-    validate_config(today, config, allow_billing_past_invoices)
+    validate_facturacion_config(today, config, allow_billing_past_invoices=False)
 
     context = browser.new_context(
         accept_downloads=True,
@@ -66,6 +93,18 @@ def run_facturacion(
     confirmar_factura(config, page1)
     descargar_factura(page1)
 
+    context.close()
+
+
+def run_facturacion_multiple(browser, cuil, password, facturador, facturaciones_por_dia):
+    context = browser.new_context(
+        accept_downloads=True,
+        user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)"
+    )
+    page = login(cuil, password, context)
+    page1 = enter_facturacion_microsite(page)
+    elegir_facturador(facturador, page1)
+    repeat_facturacion(page1, facturaciones_por_dia)
     context.close()
 
 
@@ -159,7 +198,7 @@ def descargar_factura(page1):
     logger.info(f"File saved @ {download.suggested_filename}")
 
 
-def validate_config(today: datetime.date, config, allow_billing_past_invoices: bool):
+def validate_facturacion_config(today: datetime.date, config, allow_billing_past_invoices: bool):
     if config.service_amount > LIMITE_FACTURACION_ANONIMA and not config.cuit_receptor:
         raise ValueError(f'Para facturar {config.service_amount} se requiere CUIT de consumidor final')
 
@@ -175,49 +214,14 @@ def validate_config(today: datetime.date, config, allow_billing_past_invoices: b
     return today
 
 
-def facturar(config: FacturacionParameters, allow_billing_past_invoices: bool):
-    with sync_playwright() as playwright:
-        logger.info("Inicio de facturacion 📝")
-        browser = playwright.chromium.launch(headless=False, slow_mo=1000)
-        run_facturacion(browser, config=config, allow_billing_past_invoices=allow_billing_past_invoices)
-        browser.close()
-        logger.info("Facturacion finalizada ✨")
-
-
-def facturar_multiples(
-        cuil, password, facturador, facturaciones_por_dia: List[FacturacionParameters], allow_billing_past_invoices
-):
-    validate_we_dont_repeat_any_invoice(facturaciones_por_dia)
-
-    today = datetime.datetime.today().date()
-    for facturacion_config in facturaciones_por_dia:
-        validate_config(today, facturacion_config, allow_billing_past_invoices)
-
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=False, slow_mo=1000)
-        context = browser.new_context(
-            accept_downloads=True,
-            user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)"
-        )
-        page = login(cuil, password, context)
-        page1 = enter_facturacion_microsite(page)
-        elegir_facturador(facturador, page1)
-        repeat_facturacion(page1, facturaciones_por_dia)
-
-        context.close()
-        browser.close()
-
-    mark_invoices_as_already_billed(facturaciones_por_dia)
-
-
 def validate_we_dont_repeat_any_invoice(configs):
     """Perhaps delegate logic into class??"""
     with open('.facturaciones_realizadas.json', 'r') as f:
         oldfacturas = json.load(f)
 
     for config in configs:
-        assert config.to_dict() not in oldfacturas, \
-            f"{config} was already billed. Aborting double billing."
+        if config.to_dict() in  oldfacturas:
+            raise ValueError(f"{config} was already billed. Aborting because we can't allow double billing")
 
 
 def mark_invoices_as_already_billed(configs: List[FacturacionParameters]):
