@@ -37,7 +37,7 @@ def facturar_prompt(monto, servicio, cuil, facturador, cuitdestino, autoconfirm,
         service_amount=monto,
         askconfirmation=not autoconfirm,
     )
-    facturar(config=config, allow_billing_past_invoices=allow_billing_past_invoices)
+    facturar(config=config)
 
 
 @click.command()
