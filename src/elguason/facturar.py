@@ -184,16 +184,6 @@ def facturar(config: FacturacionParameters, allow_billing_past_invoices: bool):
         logger.info("Facturacion finalizada ✨")
 
 
-def validate_we_dont_repeat_any_invoice(configs):
-    """Perhaps delegate logic into class??"""
-    with open('.facturaciones_realizadas.json', 'r') as f:
-        oldfacturas = json.load(f)
-
-    for config in configs:
-        assert config.to_dict() not in oldfacturas, \
-            f"{config} was already billed. Aborting double billing."
-
-
 def facturar_multiples(
         cuil, password, facturador, facturaciones_por_dia: List[FacturacionParameters], allow_billing_past_invoices
 ):
@@ -220,6 +210,16 @@ def facturar_multiples(
     mark_invoices_as_already_billed(facturaciones_por_dia)
 
 
+def validate_we_dont_repeat_any_invoice(configs):
+    """Perhaps delegate logic into class??"""
+    with open('.facturaciones_realizadas.json', 'r') as f:
+        oldfacturas = json.load(f)
+
+    for config in configs:
+        assert config.to_dict() not in oldfacturas, \
+            f"{config} was already billed. Aborting double billing."
+
+
 def mark_invoices_as_already_billed(configs: List[FacturacionParameters]):
     """We arbitrarily assume one can idenitify an invoice univocally by cuil, date, service, monto and cuit dest"""
     with open('.facturaciones_realizadas.json', 'r') as f:
@@ -229,7 +229,6 @@ def mark_invoices_as_already_billed(configs: List[FacturacionParameters]):
     oldfacturas.extend(newfacturas)
     with open('.facturaciones_realizadas.json', 'w') as f:
         json.dump(oldfacturas, f, indent=2, ensure_ascii=False, sort_keys=True)
-
 
 
 def repeat_facturacion(page1, facturaciones_por_dia):
