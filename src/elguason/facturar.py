@@ -12,7 +12,7 @@ from playwright.sync_api import sync_playwright
 class FacturacionParameters:
     cuil: str
     password: str
-    facturador_name: str
+    facturador: str
     service_name: str
     service_amount: int
     cuit_receptor: str
@@ -21,11 +21,26 @@ class FacturacionParameters:
     date: datetime.date = datetime.datetime.today().date()
 
     def __str__(self):
-        base = f"Factura de '{self.facturador_name}' por '{self.service_name}' por un monto de ${self.service_amount} "
+        base = f"Factura de '{self.facturador}' por '{self.service_name}' por un monto de ${self.service_amount} "
         base += f'para {self.cuit_receptor}' if self.cuit_receptor else ''
         return base
 
     __repr__ = __str__
+
+    def to_dict(self):
+        return {
+            'cuil': self.cuil,
+            'service_name': self.service_name,
+            'service_amount': self.service_amount,
+            'cuit_receptor': self.cuit_receptor,
+            'date': self.date.strftime('%Y-%m-%d')
+            # We purposely ignore some attributes
+            # As we want invoice uniqueness judged only
+            # by the attributes above to be extra safe of double billing
+        }
+
+    def to_json(self):
+        return json.dumps(self.to_dict())
 
 
 LIMITE_FACTURACION_ANONIMA = 12500
@@ -46,7 +61,7 @@ def run_facturacion(
     page = login(config.cuil, config.password, context)
     page1 = enter_facturacion_microsite(page)
 
-    elegir_facturador(config.facturador_name, page1)
+    elegir_facturador(config.facturador, page1)
     generar_factura(config, page1)
     confirmar_factura(config, page1)
     descargar_factura(page1)
@@ -174,18 +189,19 @@ def validate_we_dont_repeat_any_invoice(configs):
     with open('.facturaciones_realizadas.json', 'r') as f:
         oldfacturas = json.load(f)
 
-    lookup = {(x.date, x.service, x.monto) for x in oldfacturas}
     for config in configs:
-        assert (config.date, config.service_name, config.service_amount) not in lookup, \
+        assert config.to_dict() not in oldfacturas, \
             f"{config} was already billed. Aborting double billing."
 
 
-def facturar_multiples(cuil, password, facturador, facturaciones_por_dia: List[FacturacionParameters]):
+def facturar_multiples(
+        cuil, password, facturador, facturaciones_por_dia: List[FacturacionParameters], allow_billing_past_invoices
+):
     validate_we_dont_repeat_any_invoice(facturaciones_por_dia)
 
     today = datetime.datetime.today().date()
     for facturacion_config in facturaciones_por_dia:
-        validate_config(today, facturacion_config)
+        validate_config(today, facturacion_config, allow_billing_past_invoices)
 
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=False, slow_mo=1000)
@@ -201,18 +217,19 @@ def facturar_multiples(cuil, password, facturador, facturaciones_por_dia: List[F
         context.close()
         browser.close()
 
-    mark_facturas_as_done(facturaciones_por_dia)
+    mark_invoices_as_already_billed(facturaciones_por_dia)
 
 
-def mark_facturas_as_done(configs: List[FacturacionParameters]):
+def mark_invoices_as_already_billed(configs: List[FacturacionParameters]):
     """We arbitrarily assume one can idenitify an invoice univocally by cuil, date, service, monto and cuit dest"""
     with open('.facturaciones_realizadas.json', 'r') as f:
         oldfacturas = json.load(f)
 
-    newfacturas = [x for x in configs]
+    newfacturas = [x.to_dict() for x in configs]
     oldfacturas.extend(newfacturas)
     with open('.facturaciones_realizadas.json', 'w') as f:
-        json.dump(oldfacturas, f)
+        json.dump(oldfacturas, f, indent=2, ensure_ascii=False, sort_keys=True)
+
 
 
 def repeat_facturacion(page1, facturaciones_por_dia):
