@@ -9,7 +9,7 @@ import csv
 from loguru import logger
 
 from .main import FacturacionParameters, facturar, facturar_multiples
-from .configure_cron import configure
+from .configure_cron import configure, remove
 from .download_facturas import download_comprobantes, DownloadComprobantesConfig
 from .facturacion_report import report_from_pdfs
 
@@ -24,8 +24,9 @@ load_dotenv()
 @click.option('--facturador', default=os.getenv('FACTURADOR'))
 @click.option('--cuitdestino', default=None, help="CUIT destinatario si monto excede limite de anonimato")
 @click.option('--ptoventa', default=1)
+@click.option('--allow-billing-past-invoices', help="Set this if you want to bill invoices earlier than today", default=False)
 @click.option('--autoconfirm', default=False)
-def myfactura(monto, servicio, cuil, facturador, cuitdestino, autoconfirm, ptoventa):
+def facturar_prompt(monto, servicio, cuil, facturador, cuitdestino, autoconfirm, ptoventa, allow_billing_past_invoices):
     passwd = _read_password()
     config = FacturacionParameters(
         cuil=cuil,
@@ -35,9 +36,9 @@ def myfactura(monto, servicio, cuil, facturador, cuitdestino, autoconfirm, ptove
         cuit_receptor=cuitdestino,
         punto_de_venta=ptoventa,
         service_amount=monto,
-        askconfirmation=not autoconfirm
+        askconfirmation=not autoconfirm,
     )
-    facturar(config=config)
+    facturar(config=config, allow_billing_past_invoices=allow_billing_past_invoices)
 
 
 @click.command()
@@ -92,17 +93,23 @@ def build_report(comprobantespath, destination):
 @click.command()
 @click.argument('hour')
 @click.argument('spec')
+@click.option('--unset', help="Delete cron", is_flag=True, default=False)
 @click.option('--log', help="Where to store logs for cron runs.", default='~/elguason.log')
-def configure_cron(hour, spec, log):
+@click.option('--allow-billing-past-invoices', help="Set this if you want to bill invoices earlier than today", default=False)
+def configure_cron(hour, spec, log, unset, allow_billing_past_invoices):
     """Configure cron to periodically emit invoices specified by certain csv SPEC at certain HOUR
 
     Usage:h
         configure_cron 18 ~/facturacionspec.csv
     """
     path = os.path.expanduser(log)
-    cron = configure(hour, spec, path)
-    logger.info(f'✅ Configured new cron as:\n{cron}\n'
-                f'See more details with `crontab -l`')
+    if unset:
+        remove(hour, spec, path, allow_billing_past_invoices)
+        logger.info("✅ Cron was removed")
+    else:
+        cron = configure(hour, spec, path, allow_billing_past_invoices)
+        logger.info(f'✅ Configured new cron as:\n{cron}\n'
+                    f'See more details with `crontab -l`')
 
 
 @click.command()
@@ -153,7 +160,7 @@ def _read_password():
 if __name__ == "__main__":
     arg = sys.argv[1:]
     if 'f' in arg:
-        myfactura()
+        facturar_prompt()
     if 'd' in arg:
         download_facturas()
     if 'r' in arg:
