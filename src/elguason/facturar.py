@@ -75,7 +75,9 @@ def facturar_multiples(
     # Execute
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=False, slow_mo=1000)
+        logger.info("Inicio de facturacion multiple 📝")
         run_facturacion_multiple(browser, cuil, password, facturador, facturaciones_por_dia)
+        logger.info("Facturaciones finalizadas ✨")
         browser.close()
 
     mark_invoices_as_already_billed(facturaciones_por_dia)
@@ -105,9 +107,13 @@ def run_facturacion_multiple(browser, cuil, password, facturador, facturaciones_
         accept_downloads=True,
         user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)"
     )
+    logger.info("Login into AFIP")
     page = login(cuil, password, context)
+    logger.info("Login into facturacion microsite")
     page1 = enter_facturacion_microsite(page)
+    logger.info(f"Choosing facturador button by the provided name={facturador}")
     elegir_facturador(facturador, page1)
+    logger.info("Start generating invoices")
     repeat_facturacion(page1, facturaciones_por_dia)
     context.close()
 
@@ -244,12 +250,15 @@ def mark_invoices_as_already_billed(configs: List[FacturacionParameters]):
 
 def repeat_facturacion(page1, facturaciones_por_dia):
     for config in facturaciones_por_dia:
-        logger.info(f'Emitiendo factura {config}')
+        logger.info(f'Generating invoice: {config}')
         generar_factura(config, page1)
+        logger.info("Confirming factura")
         confirmar_factura(config, page1)
+        logger.info("Downloading factura")
         descargar_factura(page1)
 
         # Go back to main menu and start with the next invoice/factura
+        logger.info("Returning to main menu to generate next invoice")
         page1.click("text=Menú Principal")
         logger.info('Sleeping to simulate human behaviour')
         time.sleep(5)
