@@ -1,6 +1,8 @@
 import datetime
+import json
 from dataclasses import dataclass
 import time
+from pathlib import Path
 from typing import List
 
 from loguru import logger
@@ -11,7 +13,7 @@ from playwright.sync_api import sync_playwright
 class FacturacionParameters:
     cuil: str
     password: str
-    facturador_name: str
+    facturador: str
     service_name: str
     service_amount: int
     cuit_receptor: str
@@ -20,23 +22,73 @@ class FacturacionParameters:
     date: datetime.date = datetime.datetime.today().date()
 
     def __str__(self):
-        base = f"Factura de '{self.facturador_name}' por '{self.service_name}' por un monto de ${self.service_amount} "
+        base = f"Factura de '{self.facturador}' por '{self.service_name}' por un monto de ${self.service_amount} "
         base += f'para {self.cuit_receptor}' if self.cuit_receptor else ''
         return base
 
     __repr__ = __str__
 
+    def to_dict(self):
+        return {
+            'cuil': self.cuil,
+            'service_name': self.service_name,
+            'service_amount': self.service_amount,
+            'cuit_receptor': self.cuit_receptor,
+            'date': self.date.strftime('%Y-%m-%d')
+            # We purposely ignore some attributes
+            # As we want invoice uniqueness judged only
+            # by the attributes above to be extra safe of double billing
+        }
+
+    def to_json(self):
+        return json.dumps(self.to_dict())
+
 
 LIMITE_FACTURACION_ANONIMA = 12500
+HERE = Path(__file__).absolute().parent
+invoicespath = HERE / '.facturaciones_realizadas.json'
+
+
+def facturar(config: FacturacionParameters):
+    # Validate
+    validate_facturacion_config(config, allow_billing_past_invoices=False)
+
+    # Execute
+    with sync_playwright() as playwright:
+        logger.info("Inicio de facturacion 📝")
+        browser = playwright.chromium.launch(headless=False, slow_mo=1000)
+        run_facturacion(browser, config=config)
+        browser.close()
+        logger.info("Facturacion finalizada ✨")
+
+    mark_invoices_as_already_billed(configs=[config])
+
+
+def facturar_multiples(
+        cuil, password, facturador,
+        facturaciones_por_dia: List[FacturacionParameters],
+        allow_billing_past_invoices: bool
+):
+    # Validate
+    validate_we_dont_repeat_any_invoice(facturaciones_por_dia)
+    for facturacion_config in facturaciones_por_dia:
+        validate_facturacion_config(facturacion_config, allow_billing_past_invoices)
+
+    # Execute
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(headless=False, slow_mo=1000)
+        logger.info("Inicio de facturacion multiple 📝")
+        run_facturacion_multiple(browser, cuil, password, facturador, facturaciones_por_dia)
+        logger.info("Facturaciones finalizadas ✨")
+        browser.close()
+
+    mark_invoices_as_already_billed(facturaciones_por_dia)
 
 
 def run_facturacion(
     browser,
     config: FacturacionParameters,
 ) -> None:
-    today = datetime.datetime.today().date()
-    validate_config(today, config)
-
     context = browser.new_context(
         accept_downloads=True,
         user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)"
@@ -44,11 +96,27 @@ def run_facturacion(
     page = login(config.cuil, config.password, context)
     page1 = enter_facturacion_microsite(page)
 
-    elegir_facturador(config, page1)
+    elegir_facturador(config.facturador, page1)
     generar_factura(config, page1)
     confirmar_factura(config, page1)
     descargar_factura(page1)
 
+    context.close()
+
+
+def run_facturacion_multiple(browser, cuil, password, facturador, facturaciones_por_dia):
+    context = browser.new_context(
+        accept_downloads=True,
+        user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)"
+    )
+    logger.info("Login into AFIP")
+    page = login(cuil, password, context)
+    logger.info("Login into facturacion microsite")
+    page1 = enter_facturacion_microsite(page)
+    logger.info(f"Choosing facturador button by the provided name={facturador}")
+    elegir_facturador(facturador, page1)
+    logger.info("Start generating invoices")
+    repeat_facturacion(page1, facturaciones_por_dia)
     context.close()
 
 
@@ -75,8 +143,8 @@ def enter_facturacion_microsite(page):
     return page1
 
 
-def elegir_facturador(config, page1):
-    facturador = config.facturador_name.upper()
+def elegir_facturador(facturador, page1):
+    facturador = facturador.upper()
     logger.info(f'Buscando boton de monotributista para el cual tributar con nombre {facturador}')
     page1.click(f"input[role=\"button\"]:has-text(\"{facturador}\")")
 
@@ -142,54 +210,55 @@ def descargar_factura(page1):
     logger.info(f"File saved @ {download.suggested_filename}")
 
 
-def validate_config(today, config):
+def validate_facturacion_config(config: FacturacionParameters, allow_billing_past_invoices: bool):
+    today = datetime.datetime.today().date()
     if config.service_amount > LIMITE_FACTURACION_ANONIMA and not config.cuit_receptor:
         raise ValueError(f'Para facturar {config.service_amount} se requiere CUIT de consumidor final')
 
     if config.date > today:
         raise ValueError(f"No se puede emitir facturas para el futuro. "
                          f"Hoy es {today}, per la factura es para el {config.date}")
+    if allow_billing_past_invoices is False and config.date < today:
+        raise ValueError("No se puede facturar para días anteriores si no se especifica --allow-billing-past-invoices")
+
     if (today - config.date) > datetime.timedelta(days=10):
         raise ValueError("No se puede facturar servicios realizados hace mas de 10 dias")
+
     return today
 
 
-def facturar(config: FacturacionParameters):
-    with sync_playwright() as playwright:
-        logger.info("Inicio de facturacion 📝")
-        browser = playwright.chromium.launch(headless=False, slow_mo=1000)
-        run_facturacion(browser, config=config)
-        browser.close()
-        logger.info("Facturacion finalizada ✨")
+def validate_we_dont_repeat_any_invoice(configs: List[FacturacionParameters]):
+    """Perhaps delegate logic into class??"""
+    with open(invoicespath, 'r') as f:
+        oldfacturas = json.load(f)
+
+    for config in configs:
+        if config.to_dict() in oldfacturas:
+            raise ValueError(f"{config} was already billed. Aborting because we can't allow double billing")
 
 
-def facturar_multiples(cuil, password, facturaciones_por_dia: List[FacturacionParameters]):
-    today = datetime.datetime.today().date()
-    for facturacion_config in facturaciones_por_dia:
-        validate_config(today, facturacion_config)
+def mark_invoices_as_already_billed(configs: List[FacturacionParameters]):
+    """We arbitrarily assume one can idenitify an invoice univocally by cuil, date, service, monto and cuit dest"""
+    with open(invoicespath, 'r') as f:
+        oldfacturas = json.load(f)
 
-    with sync_playwright() as playwright:
-        browser = playwright.chromium.launch(headless=False, slow_mo=1000)
-        context = browser.new_context(
-            accept_downloads=True,
-            user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)"
-        )
-        page = login(cuil, password, context)
-        page1 = enter_facturacion_microsite(page)
-        repeat_facturacion(page1, facturaciones_por_dia)
-
-        context.close()
-        browser.close()
+    newfacturas = [x.to_dict() for x in configs]
+    oldfacturas.extend(newfacturas)
+    with open(invoicespath, 'w') as f:
+        json.dump(oldfacturas, f, indent=2, ensure_ascii=False, sort_keys=True)
 
 
 def repeat_facturacion(page1, facturaciones_por_dia):
     for config in facturaciones_por_dia:
-        logger.info(f'Emitiendo factura {config}')
+        logger.info(f'Generating invoice: {config}')
         generar_factura(config, page1)
+        logger.info("Confirming factura")
         confirmar_factura(config, page1)
+        logger.info("Downloading factura")
         descargar_factura(page1)
 
         # Go back to main menu and start with the next invoice/factura
+        logger.info("Returning to main menu to generate next invoice")
         page1.click("text=Menú Principal")
         logger.info('Sleeping to simulate human behaviour')
         time.sleep(5)
