@@ -1,4 +1,5 @@
 import datetime
+import json
 from dataclasses import dataclass
 import time
 from typing import List
@@ -162,7 +163,20 @@ def facturar(config: FacturacionParameters):
         print("Facturacion finalizada ✨")
 
 
+def validate_we_dont_repeat_any_invoice(configs):
+    """Perhaps delegate logic into class??"""
+    with open('.facturaciones_realizadas.json', 'r') as f:
+        oldfacturas = json.load(f)
+
+    lookup = {(x.date, x.service, x.monto) for x in oldfacturas}
+    for config in configs:
+        assert (config.date, config.service_name, config.service_amount) not in lookup, \
+            f"{config} was already billed. Aborting double billing."
+
+
 def facturar_multiples(cuil, password, facturador, facturaciones_por_dia: List[FacturacionParameters]):
+    validate_we_dont_repeat_any_invoice(facturaciones_por_dia)
+
     today = datetime.datetime.today().date()
     for facturacion_config in facturaciones_por_dia:
         validate_config(today, facturacion_config)
@@ -180,6 +194,19 @@ def facturar_multiples(cuil, password, facturador, facturaciones_por_dia: List[F
 
         context.close()
         browser.close()
+
+    mark_facturas_as_done(facturaciones_por_dia)
+
+
+def mark_facturas_as_done(configs: List[FacturacionParameters]):
+    """We arbitrarily assume one can idenitify an invoice univocally by cuil, date, service, monto and cuit dest"""
+    with open('.facturaciones_realizadas.json', 'r') as f:
+        oldfacturas = json.load(f)
+
+    newfacturas = [x for x in configs]
+    oldfacturas.extend(newfacturas)
+    with open('.facturaciones_realizadas.json', 'w') as f:
+        json.dump(oldfacturas, f)
 
 
 def repeat_facturacion(page1, facturaciones_por_dia):
