@@ -3,6 +3,7 @@ from dataclasses import dataclass
 import time
 from typing import List
 
+from loguru import logger
 from playwright.sync_api import sync_playwright
 
 
@@ -52,10 +53,10 @@ def run_facturacion(
 
 
 def login(cuil, password, context):
-    print('Abriendo página monotributo..')
+    logger.info('Abriendo página monotributo..')
     page = context.new_page()
     page.goto("https://auth.afip.gov.ar/contribuyente_/login.xhtml?action=SYSTEM&system=admin_mono")
-    print('Ingresando al sitio..')
+    logger.info('Ingresando al sitio..')
     page.fill("input[name=\"F1:username\"]", cuil)
     page.press("input[name=\"F1:username\"]", "Enter")
     page.fill("input[name=\"F1:password\"]", password)
@@ -66,7 +67,7 @@ def login(cuil, password, context):
 
 
 def enter_facturacion_microsite(page):
-    print('Ingresando a micrositio de facturación')
+    logger.info('Ingresando a micrositio de facturación')
     with page.expect_navigation():
         with page.expect_popup() as popup_info:
             page.click("text=Emitir Factura")
@@ -76,19 +77,19 @@ def enter_facturacion_microsite(page):
 
 def elegir_facturador(config, page1):
     facturador = config.facturador_name.upper()
-    print(f'Buscando boton de monotributista para el cual tributar con nombre {facturador}')
+    logger.info(f'Buscando boton de monotributista para el cual tributar con nombre {facturador}')
     page1.click(f"input[role=\"button\"]:has-text(\"{facturador}\")")
 
 
 def generar_factura(config, page1):
     page1.click("a[role=\"button\"]:has-text(\"Generar Comprobantes\")")
-    print('Eligiendo punto de venta y tipo de factura')
+    logger.info('Eligiendo punto de venta y tipo de factura')
     page1.select_option("select[name=\"puntoDeVenta\"]", str(config.punto_de_venta))
     # Wait it automatically selects Factura C on second dropdown menu
     time.sleep(2)
 
     page1.click("text=Continuar >")
-    print('Ingresando servicio como tipo de facturacion')
+    logger.info('Ingresando servicio como tipo de facturacion')
     # Facturacion de Servicios
     servicios = "2"
     page1.select_option("select[name=\"idConcepto\"]", servicios)
@@ -102,7 +103,7 @@ def generar_factura(config, page1):
     # El dia de vencimiento tambien es input, pero siempre debe ser hoy, sino no vale facturarlo
 
     page1.click("text=Continuar >")
-    print(
+    logger.info(
         f'Facturando {config.service_name} por un monto de {config.service_amount} '
         f'para consumidor final con pago al contado'
     )
@@ -125,7 +126,7 @@ def confirmar_factura(config, page1):
     if config.askconfirmation:
         resp = input('Presiona ENTER para facturar, o cualquier otra tecla para cancelar\n')
         if resp != '':
-            print('Cancelando Facturacion')
+            logger.info('Cancelando Facturacion')
             exit(0)
     # Clickear confirmar y aceptar el popup
     page1.once("dialog", lambda dialog: dialog.accept())
@@ -138,7 +139,7 @@ def descargar_factura(page1):
         page1.click("text=Imprimir...")
     download = download_info.value
     download.save_as(download.suggested_filename)
-    print(f"File saved @ {download.suggested_filename}")
+    logger.info(f"File saved @ {download.suggested_filename}")
 
 
 def validate_config(today, config):
@@ -155,11 +156,11 @@ def validate_config(today, config):
 
 def facturar(config: FacturacionParameters):
     with sync_playwright() as playwright:
-        print("Inicio de facturacion 📝")
+        logger.info("Inicio de facturacion 📝")
         browser = playwright.chromium.launch(headless=False, slow_mo=1000)
         run_facturacion(browser, config=config)
         browser.close()
-        print("Facturacion finalizada ✨")
+        logger.info("Facturacion finalizada ✨")
 
 
 def facturar_multiples(cuil, password, facturaciones_por_dia: List[FacturacionParameters]):
@@ -183,12 +184,12 @@ def facturar_multiples(cuil, password, facturaciones_por_dia: List[FacturacionPa
 
 def repeat_facturacion(page1, facturaciones_por_dia):
     for config in facturaciones_por_dia:
-        print(f'Emitiendo factura {config}')
+        logger.info(f'Emitiendo factura {config}')
         generar_factura(config, page1)
         confirmar_factura(config, page1)
         descargar_factura(page1)
 
         # Go back to main menu and start with the next invoice/factura
         page1.click("text=Menú Principal")
-        print('Sleeping to simulate human behaviour')
+        logger.info('Sleeping to simulate human behaviour')
         time.sleep(5)

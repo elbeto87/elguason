@@ -1,6 +1,7 @@
 import datetime
 from dataclasses import dataclass
 
+from loguru import logger
 from playwright.sync_api import Playwright, sync_playwright
 
 
@@ -22,6 +23,7 @@ def run_download(
     browser = playright.chromium.launch(headless=False, slow_mo=1000)
     context = browser.new_context(accept_downloads=True)
 
+    logger.info("Validating config")
     today = datetime.datetime.today().date()
     if config.end_date > today:
         raise ValueError('No se pueden descargar comprobantes del futuro')
@@ -31,6 +33,7 @@ def run_download(
     page = context.new_page()
 
     # Login
+    logger.info("Login into AFIP")
     page.goto("https://auth.afip.gov.ar/contribuyente_/login.xhtml?action=SYSTEM&system=admin_mono")
     page.fill("input[name=\"F1:username\"]", config.cuil)
     page.press("input[name=\"F1:username\"]", "Enter")
@@ -47,9 +50,11 @@ def run_download(
     # Click on facturador button
     page1.click(f"input[role=\"button\"]:has-text(\"{config.facturador_name}\")")
 
+    logger.info("Clicking consultas")
     # Click on consultas section
     page1.click("a[role=\"button\"]:has-text(\"Consultas\")")
 
+    logger.info("Entering date range for invoices")
     # Edit start and end date of the invoices report
     page1.fill("input[name=\"fechaEmisionDesde\"]", config.start_date.strftime('%d/%m/%Y'))
     page1.fill("input[name=\"fechaEmisionHasta\"]", config.end_date.strftime('%d/%m/%Y'))
@@ -58,13 +63,16 @@ def run_download(
     # Find all download buttons, they all are buttons with Ver value.
     all_ver_buttons = page1.query_selector_all("input[value=Ver]")
 
+    logger.info("Downloading invoices")
     # Click all download buttons, waiting a few miliseconds to emulate user behaviour
     for button in all_ver_buttons:
         with page1.expect_download() as download_info:
             button.click()
 
         download = download_info.value
-        download.save_as(config.download_folder + '/' + download.suggested_filename)
+        savepath = config.download_folder + '/' + download.suggested_filename
+        logger.info(f"Saving invoice into {savepath}")
+        download.save_as(savepath)
         import time; time.sleep(1)
 
     context.close()

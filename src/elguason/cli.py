@@ -7,6 +7,8 @@ from dotenv import load_dotenv
 import getpass
 import csv
 
+from loguru import logger
+
 from .main import FacturacionParameters, facturar, facturar_multiples
 from .download_facturas import download_comprobantes, DownloadComprobantesConfig
 from .facturacion_report import report_from_pdfs
@@ -56,7 +58,7 @@ def download_facturas(cuil, facturador, start, end, autoconfirm, destination):
         start_date = datetime.datetime.strptime(start, '%d/%m/%Y').date()
         end_date = datetime.datetime.strptime(end, '%d/%m/%Y').date()
     except ValueError:
-        print('La fecha ingresada no respeta el formato. Ejemplo: 17/03/2021')
+        logger.error('La fecha ingresada no respeta el formato. Ejemplo: 17/03/2021')
         sys.exit(0)
 
     os.makedirs(destination, exist_ok=True)
