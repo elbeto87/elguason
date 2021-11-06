@@ -47,6 +47,10 @@ LIMITE_FACTURACION_ANONIMA = 12500
 
 
 def facturar(config: FacturacionParameters):
+    # Validate
+    validate_facturacion_config(config, allow_billing_past_invoices=False)
+
+    # Execute
     with sync_playwright() as playwright:
         logger.info("Inicio de facturacion 📝")
         browser = playwright.chromium.launch(headless=False, slow_mo=1000)
@@ -54,18 +58,20 @@ def facturar(config: FacturacionParameters):
         browser.close()
         logger.info("Facturacion finalizada ✨")
 
+    mark_invoices_as_already_billed(configs=[config])
+
 
 def facturar_multiples(
         cuil, password, facturador,
         facturaciones_por_dia: List[FacturacionParameters],
         allow_billing_past_invoices: bool
 ):
+    # Validate
     validate_we_dont_repeat_any_invoice(facturaciones_por_dia)
-
-    today = datetime.datetime.today().date()
     for facturacion_config in facturaciones_por_dia:
-        validate_facturacion_config(today, facturacion_config, allow_billing_past_invoices)
+        validate_facturacion_config(facturacion_config, allow_billing_past_invoices)
 
+    # Execute
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=False, slow_mo=1000)
         run_facturacion_multiple(browser, cuil, password, facturador, facturaciones_por_dia)
@@ -78,9 +84,6 @@ def run_facturacion(
     browser,
     config: FacturacionParameters,
 ) -> None:
-    today = datetime.datetime.today().date()
-    validate_facturacion_config(today, config, allow_billing_past_invoices=False)
-
     context = browser.new_context(
         accept_downloads=True,
         user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)"
@@ -198,7 +201,8 @@ def descargar_factura(page1):
     logger.info(f"File saved @ {download.suggested_filename}")
 
 
-def validate_facturacion_config(today: datetime.date, config, allow_billing_past_invoices: bool):
+def validate_facturacion_config(config, allow_billing_past_invoices: bool):
+    today = datetime.datetime.today().date()
     if config.service_amount > LIMITE_FACTURACION_ANONIMA and not config.cuit_receptor:
         raise ValueError(f'Para facturar {config.service_amount} se requiere CUIT de consumidor final')
 
