@@ -24,8 +24,8 @@ dependencies = [
 dynamic = ['version']
 
 [project.scripts]
-facturar = "elguason.cli:myfactura"
+facturar = "elguason.cli:facturar_prompt"
+facturarcsv = "elguason.cli:facturar_from_monthly_csv"
 download = "elguason.cli:download_facturas"
 report = "elguason.cli:build_report"
-micontador = "elguason.cli:facturar_from_monthly_csv"
-setcron = "elguason.cli:configure_cron"
+crontador = "elguason.cli:configure_cron"
