@@ -4,12 +4,13 @@ from pathlib import Path
 from crontab import CronTab
 from loguru import logger
 
+ENTRYPOINT = 'facturarcsv'
 
 def remove(hour, spec, outputpath):
     entrypoints_path = Path(sys.executable).parent
-    micontador = str(entrypoints_path / 'micontador')
+    facturarcsv = str(entrypoints_path / ENTRYPOINT)
 
-    new_command = f'{micontador} {spec} > {outputpath}'
+    new_command = f'{facturarcsv} {spec} > {outputpath}'
     with CronTab(user=True) as cron:
         # Find or create cron
         existing_jobs = [x for x in cron.find_command(new_command)]
@@ -19,12 +20,12 @@ def remove(hour, spec, outputpath):
 
 def configure(hour, spec, outputpath, bill_old_invoices):
     entrypoints_path = Path(sys.executable).parent
-    micontador = str(entrypoints_path / 'facturarcsv')
+    facturarcsv = str(entrypoints_path / ENTRYPOINT)
 
     if bill_old_invoices:
-        new_command = f'{micontador} {spec} --allow-billing-past-invoices > {outputpath}'
+        new_command = f'{facturarcsv} {spec} --allow-billing-past-invoices > {outputpath}'
     else:
-        new_command = f'{micontador} {spec} > {outputpath}'
+        new_command = f'{facturarcsv} {spec} > {outputpath}'
 
     with CronTab(user=True) as cron:
         # Find or create cron
