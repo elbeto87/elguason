@@ -3,9 +3,29 @@ import csv
 import datetime
 import random
 
-FACTURACION_MONOTRIBUTO = {
-    #
+
+FACTURACION_ANUAL_MONOTRIBUTO_POR_CATEGORIA = {
+    'A': 370_000,
+    'B': 550_000,
+    'C': 770_000,
+    'D': 1060_000,
+    'E': 1400_000,
+    'F': 1750_000,
+    'G': 2100_000,
+    'H': 2600_000,
 }
+FACTURACION_MENSUAL_MONOTRIBUTO_POR_CATEGORIA = {
+    cat: int(val/12)
+    for cat, val in FACTURACION_ANUAL_MONOTRIBUTO_POR_CATEGORIA.items()
+}
+
+
+def facturacion_mensual_por_categoria():
+    for cat, fact in FACTURACION_MENSUAL_MONOTRIBUTO_POR_CATEGORIA.items():
+        print(f'Categoria {cat}', f'${fact}')
+
+
+facturacion_mensual_por_categoria()
 # Ver si podes ingresar categoria monotributo directamente
 gastos_mensuales = int(input("Gastos Mensuales: ") or 150_000)
 por_dia = gastos_mensuales / 20
