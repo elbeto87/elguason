@@ -27,8 +27,9 @@ def run_download(
     today = datetime.datetime.today().date()
     if config.end_date > today:
         raise ValueError('No se pueden descargar comprobantes del futuro')
-    if config.start_date.month != config.end_date.month:
-        raise ValueError('La fecha desde hasta debe pertenecer al mismo mes')
+    # It seems to work now, so commenting out limit
+    # if config.start_date.month != config.end_date.month:
+    #     raise ValueError('La fecha desde hasta debe pertenecer al mismo mes')
 
     page = context.new_page()
 
