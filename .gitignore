@@ -144,4 +144,6 @@ venv/
 .vscode/
 *.pdf
 *.csv
+*.json
+
 
