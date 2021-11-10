@@ -27,7 +27,7 @@ def extract_info_factura_from_pdf(pdf_path: str) -> Factura:
 
     #                                  $\n\n1200,00\n\n -> 1200 Ignora decimales.
     monto = re.search(r'Importe Total: \$\s*(\d+)\s*', text).group(1)
-    fecha = re.search(r'Fecha de Emisión:\s*(.*)\s*', text).group(1)
+    fecha = re.search(r'Período Facturado Desde:\s*(.*)\s*', text).group(1)
     fecha_date = datetime.datetime.strptime(fecha, '%d/%m/%Y').date()
     return Factura(fecha=fecha_date, monto=int(monto))
 
