@@ -1,6 +1,7 @@
 import datetime
 import os
 import sys
+from pathlib import Path
 
 import click
 from dotenv import load_dotenv
@@ -24,6 +25,7 @@ load_dotenv()
 @click.option('--facturador', default=os.getenv('FACTURADOR'))
 @click.option('--cuitdestino', default=None, help="CUIT destinatario si monto excede limite de anonimato")
 @click.option('--ptoventa', default=1)
+@click.option('--destination', help='Destination folder of billing receipts', default=Path.cwd() / 'comprobantes')
 @click.option('--autoconfirm', default=False)
 def facturar_prompt(monto, servicio, cuil, facturador, cuitdestino, autoconfirm, ptoventa):
     passwd = _read_password()
@@ -44,6 +46,7 @@ def facturar_prompt(monto, servicio, cuil, facturador, cuitdestino, autoconfirm,
 @click.argument('csvpath')
 @click.option('--cuil', default=os.getenv('CUIL'))
 @click.option('--facturador', default=os.getenv('FACTURADOR'))
+@click.option('--destination', help='Destination folder of billing receipts', default=Path.cwd() / 'comprobantes')
 @click.option('--allow-billing-past-invoices', help="Set this if you want to allow billing of services in the past",
               default=False, is_flag=True)
 @click.option('--autoconfirm', default=False)
