@@ -208,8 +208,9 @@ def descargar_factura(page1, destination):
     with page1.expect_download() as download_info:
         page1.click("text=Imprimir...")
     download = download_info.value
-    download.save_as(str(destination) + download.suggested_filename)
-    logger.info(f"File saved @ {download.suggested_filename}")
+    filename = str(destination) + download.suggested_filename
+    download.save_as(filename)
+    logger.info(f"File saved @ {filename}")
 
 
 def validate_facturacion_config(config: FacturacionParameters, allow_billing_past_invoices: bool):
