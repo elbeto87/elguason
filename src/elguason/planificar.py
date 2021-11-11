@@ -28,10 +28,10 @@ def generar_plan_de_facturacion(gastos_mensuales) -> List[Tuple[datetime.date, f
 
 
 def generate_billable_days():
-    """A day is billable if it belongs to a working day in the future the same than today """
+    """A day is billable if it is a future working day in the same month than current date"""
     today = datetime.datetime.today()
-    first, last = calendar.monthrange(today.year, today.month)
-    monthdays = [datetime.date(today.year, today.month, daynum) for daynum in range(1, last + 1)]
+    _, lastdayofmonth = calendar.monthrange(today.year, today.month)
+    monthdays = [datetime.date(today.year, today.month, daynum) for daynum in range(1, lastdayofmonth + 1)]
     future_weekdays = [x for x in monthdays if x.day >= today.day and x.weekday() not in (5, 6)]
     return future_weekdays
 
