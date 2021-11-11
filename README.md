@@ -28,3 +28,6 @@ Despues de instalar con `flit install` se pueden usar los siguientes comandos
 
 ### `crontador HOUR CSVSPEC`
 > Dado un csv con las facturas a emitir, configura un cron que las emite de forma periodica a la hora especificada
+
+### `planificar GASTOMENSUAL`
+> Genera un plan de facturacion mensual de GASTOMENSUAL que factura solo los dias habiles, variando los montos diarios

@@ -1,19 +1,19 @@
+import csv
 import datetime
+import getpass
 import os
 import sys
 from pathlib import Path
 
 import click
 from dotenv import load_dotenv
-import getpass
-import csv
 from loguru import logger
 
-from .facturar import FacturacionParameters, facturar, facturar_multiples
 from .configure_cron import configure
 from .download_facturas import download_comprobantes, DownloadComprobantesConfig
 from .facturacion_report import report_from_pdfs
-
+from .facturar import FacturacionParameters, facturar, facturar_multiples
+from .planificar import generar_plan_de_facturacion, write_plan
 
 load_dotenv()
 
@@ -27,7 +27,7 @@ load_dotenv()
 @click.option('--ptoventa', default=1)
 @click.option('--destination', help='Destination folder of billing receipts', default=Path.cwd() / 'comprobantes')
 @click.option('--autoconfirm', default=False)
-def facturar_prompt(monto, servicio, cuil, facturador, cuitdestino, autoconfirm, ptoventa):
+def facturar_prompt(cuil, servicio, monto, facturador, cuitdestino, ptoventa, destination, autoconfirm):
     passwd = _read_password()
     config = FacturacionParameters(
         cuil=cuil,
@@ -39,7 +39,7 @@ def facturar_prompt(monto, servicio, cuil, facturador, cuitdestino, autoconfirm,
         service_amount=monto,
         askconfirmation=not autoconfirm,
     )
-    facturar(config=config)
+    facturar(config=config, destination=os.path.join(destination, ''))
 
 
 @click.command()
@@ -50,7 +50,7 @@ def facturar_prompt(monto, servicio, cuil, facturador, cuitdestino, autoconfirm,
 @click.option('--allow-billing-past-invoices', help="Set this if you want to allow billing of services in the past",
               default=False, is_flag=True)
 @click.option('--autoconfirm', default=False)
-def facturar_from_monthly_csv(csvpath, cuil, facturador, autoconfirm, allow_billing_past_invoices):
+def facturar_from_monthly_csv(csvpath, cuil, facturador, destination, allow_billing_past_invoices, autoconfirm):
     """Emite facturas dado lo especificado en CSVPATH
 
     El csv debe tener la siguiente estructura:
@@ -81,7 +81,7 @@ def facturar_from_monthly_csv(csvpath, cuil, facturador, autoconfirm, allow_bill
                 )
             )
 
-    facturar_multiples(cuil, password, facturador, facturas, allow_billing_past_invoices)
+    facturar_multiples(cuil, password, facturador, facturas, allow_billing_past_invoices, os.path.join(destination, ''))
 
 
 @click.command()
@@ -155,15 +155,12 @@ def _read_password():
     return os.getenv('PASSWORD') or getpass.getpass(f'Password (Hidden input): ')
 
 
-if __name__ == "__main__":
-    arg = sys.argv[1:]
-    if 'f' in arg:
-        facturar_prompt()
-    if 'd' in arg:
-        download_facturas()
-    if 'r' in arg:
-        build_report()
-    if 'c' in arg:
-        facturar_from_monthly_csv()
-    if 'r' in arg:
-        configure_cron()
+@click.command()
+@click.argument('gastomensual', type=click.IntRange(1000))
+@click.option('--destination', help="Where to save the plan", default='plan.csv')
+def gastomensual(gastomensual, destination):
+    plan = generar_plan_de_facturacion(gastomensual)
+    total = sum(x[1] for x in plan)
+    path = write_plan(plan, destination)
+    click.echo(f"Your plan will bill {total} this month.\n"
+               f"Open {path} to review it so you can then bill from it with `facturarcsv {path}`")

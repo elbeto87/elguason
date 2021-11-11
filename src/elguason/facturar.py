@@ -49,7 +49,7 @@ HERE = Path(__file__).absolute().parent
 invoicespath = HERE / '.facturaciones_realizadas.json'
 
 
-def facturar(config: FacturacionParameters):
+def facturar(config: FacturacionParameters, destination):
     # Validate
     validate_facturacion_config(config, allow_billing_past_invoices=False)
 
@@ -57,7 +57,7 @@ def facturar(config: FacturacionParameters):
     with sync_playwright() as playwright:
         logger.info("Inicio de facturacion 📝")
         browser = playwright.chromium.launch(headless=False, slow_mo=1000)
-        run_facturacion(browser, config=config)
+        run_facturacion(browser, config, destination)
         browser.close()
         logger.info("Facturacion finalizada ✨")
 
@@ -67,7 +67,8 @@ def facturar(config: FacturacionParameters):
 def facturar_multiples(
         cuil, password, facturador,
         facturaciones_por_dia: List[FacturacionParameters],
-        allow_billing_past_invoices: bool
+        allow_billing_past_invoices: bool,
+        destination: str,
 ):
     # Validate
     validate_we_dont_repeat_any_invoice(facturaciones_por_dia)
@@ -78,7 +79,7 @@ def facturar_multiples(
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=False, slow_mo=1000)
         logger.info("Inicio de facturacion multiple 📝")
-        run_facturacion_multiple(browser, cuil, password, facturador, facturaciones_por_dia)
+        run_facturacion_multiple(browser, cuil, password, facturador, facturaciones_por_dia, destination)
         logger.info("Facturaciones finalizadas ✨")
         browser.close()
 
@@ -88,6 +89,7 @@ def facturar_multiples(
 def run_facturacion(
     browser,
     config: FacturacionParameters,
+    destination: str,
 ) -> None:
     context = browser.new_context(
         accept_downloads=True,
@@ -99,12 +101,12 @@ def run_facturacion(
     elegir_facturador(config.facturador, page1)
     generar_factura(config, page1)
     confirmar_factura(config, page1)
-    descargar_factura(page1)
+    descargar_factura(page1, destination)
 
     context.close()
 
 
-def run_facturacion_multiple(browser, cuil, password, facturador, facturaciones_por_dia):
+def run_facturacion_multiple(browser, cuil, password, facturador, facturaciones_por_dia, destination):
     context = browser.new_context(
         accept_downloads=True,
         user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)"
@@ -116,7 +118,7 @@ def run_facturacion_multiple(browser, cuil, password, facturador, facturaciones_
     logger.info(f"Choosing facturador button by the provided name={facturador}")
     elegir_facturador(facturador, page1)
     logger.info("Start generating invoices")
-    repeat_facturacion(page1, facturaciones_por_dia)
+    repeat_facturacion(page1, facturaciones_por_dia, destination)
     context.close()
 
 
@@ -201,12 +203,12 @@ def confirmar_factura(config, page1):
     page1.click("text=Confirmar Datos...")
 
 
-def descargar_factura(page1):
+def descargar_factura(page1, destination):
     # Imprimir comprobante con nombre autogenerado por AFIP
     with page1.expect_download() as download_info:
         page1.click("text=Imprimir...")
     download = download_info.value
-    download.save_as(download.suggested_filename)
+    download.save_as(str(destination) + download.suggested_filename)
     logger.info(f"File saved @ {download.suggested_filename}")
 
 
@@ -248,14 +250,14 @@ def mark_invoices_as_already_billed(configs: List[FacturacionParameters]):
         json.dump(oldfacturas, f, indent=2, ensure_ascii=False, sort_keys=True)
 
 
-def repeat_facturacion(page1, facturaciones_por_dia):
+def repeat_facturacion(page1, facturaciones_por_dia, destination):
     for config in facturaciones_por_dia:
         logger.info(f'Generating invoice: {config}')
         generar_factura(config, page1)
         logger.info("Confirming factura")
         confirmar_factura(config, page1)
         logger.info("Downloading factura")
-        descargar_factura(page1)
+        descargar_factura(page1, destination)
 
         # Go back to main menu and start with the next invoice/factura
         logger.info("Returning to main menu to generate next invoice")
