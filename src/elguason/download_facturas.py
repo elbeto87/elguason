@@ -70,6 +70,10 @@ def run_download(
             button.click()
 
         download = download_info.value
+        if not download:
+            logger.error(f"Failed to download {download_info}")
+            continue
+
         savepath = config.download_folder + '/' + download.suggested_filename
         logger.info(f"Saving invoice into {savepath}")
         download.save_as(savepath)
