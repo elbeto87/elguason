@@ -2,7 +2,9 @@ import calendar
 import csv
 import datetime
 import statistics
-from typing import List, Iterable, Tuple
+from typing import List, Tuple
+from elguason import titulo_de_servicio_generator
+
 
 FACTURACION_ANUAL_MONOTRIBUTO_POR_CATEGORIA = {
     # See https://www.afip.gob.ar/monotributo/categorias.asp
@@ -48,12 +50,12 @@ def generar_facturacion_por_dia(
 
 
 def write_plan(bill_by_day, path='planificacion.csv'):
-    with open(path, 'w') as f:
+    with open(path, 'w', encoding='utf-8') as f:
         writer = csv.writer(f)
         header = ['fecha', 'servicio', 'monto', 'cuit_destino', 'punto_de_venta']
         writer.writerow(header)
         for day, amount in bill_by_day:
-            row = [day.strftime('%d/%m/%Y'), 'Servicios Profesionales', amount, '', '']
+            row = [day.strftime('%d/%m/%Y'), titulo_de_servicio_generator(), amount, '', '']
             writer.writerow(row)
 
     return path
