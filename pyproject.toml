@@ -19,6 +19,7 @@ dependencies = [
     "python-dotenv==0.19.1",
     "click==8.0.3",
     "python-crontab==2.6.0",
+    "pdfminer==20191125",
     "loguru==0.5.3",
 ]
 dynamic = ['version']
