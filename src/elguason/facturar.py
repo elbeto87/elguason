@@ -8,6 +8,8 @@ from typing import List
 from loguru import logger
 from playwright.sync_api import sync_playwright
 
+from elguason import random_user_agent
+
 
 @dataclass
 class FacturacionParameters:
@@ -93,7 +95,7 @@ def run_facturacion(
 ) -> None:
     context = browser.new_context(
         accept_downloads=True,
-        user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)"
+        user_agent=random_user_agent()
     )
     page = login(config.cuil, config.password, context)
     page1 = enter_facturacion_microsite(page)
@@ -109,7 +111,7 @@ def run_facturacion(
 def run_facturacion_multiple(browser, cuil, password, facturador, facturaciones_por_dia, destination):
     context = browser.new_context(
         accept_downloads=True,
-        user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko)"
+        user_agent=random_user_agent()
     )
     logger.info("Login into AFIP")
     page = login(cuil, password, context)

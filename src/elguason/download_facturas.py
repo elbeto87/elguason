@@ -4,6 +4,8 @@ from dataclasses import dataclass
 from loguru import logger
 from playwright.sync_api import Playwright, sync_playwright
 
+from elguason import random_user_agent
+
 
 @dataclass
 class DownloadComprobantesConfig:
@@ -21,15 +23,12 @@ def run_download(
     config: DownloadComprobantesConfig,
 ) -> str:
     browser = playright.chromium.launch(headless=False, slow_mo=1000)
-    context = browser.new_context(accept_downloads=True)
+    context = browser.new_context(accept_downloads=True, user_agent=random_user_agent())
 
     logger.info("Validating config")
     today = datetime.datetime.today().date()
     if config.end_date > today:
         raise ValueError('No se pueden descargar comprobantes del futuro')
-    # It seems to work now, so commenting out limit
-    # if config.start_date.month != config.end_date.month:
-    #     raise ValueError('La fecha desde hasta debe pertenecer al mismo mes')
 
     page = context.new_page()
 
