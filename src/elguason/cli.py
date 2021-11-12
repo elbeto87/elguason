@@ -107,6 +107,7 @@ def download_facturas(cuil, facturador, start, end, autoconfirm, destination):
         sys.exit(0)
 
     os.makedirs(destination, exist_ok=True)
+    logger.info("Starting to download comprobantes")
     savepath = download_comprobantes(config=DownloadComprobantesConfig(
         cuil=cuil,
         password=passwd,
