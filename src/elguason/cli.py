@@ -131,7 +131,7 @@ def build_report(comprobantespath, destination):
         report comprobantes --destionation reports
     """
     folder = report_from_pdfs(comprobantespath, destination)
-    click.echo(f"Reports saved at {folder}")
+    click.echo(f"Report saved at {folder}")
 
 
 @click.command()

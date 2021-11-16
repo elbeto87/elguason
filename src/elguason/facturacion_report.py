@@ -57,15 +57,20 @@ def dump_to_json(facturas: List[Factura], saveas='facturas.json'):
     return saveas
 
 
-def report_from_pdfs(folder: str, report_folder='reports'):
+def report_from_pdfs(folder: str, report_folder='reports', csv=True) -> str:
     files = glob.glob(f'{folder}/*.pdf')
     if not files:
         logger.info(f'No hay PDFs de facturas en la carpeta indicada ({folder})')
-        return
+        return ''
 
     facturas = [extract_info_factura_from_pdf(f) for f in files]
     os.makedirs(report_folder, exist_ok=True)
     date = datetime.datetime.today().date()
-    dump_to_csv(facturas, saveas=f'{report_folder}/facturas-{date}.csv')
-    dump_to_json(facturas, saveas=f'{report_folder}/facturas-{date}.json')
-    return report_folder
+    if csv:
+        report_path = f'{report_folder}/facturas-{date}.csv'
+        dump_to_csv(facturas, saveas=report_path)
+    else:
+        report_path = f'{report_folder}/facturas-{date}.json'
+        dump_to_json(facturas, saveas=report_path)
+
+    return report_path
