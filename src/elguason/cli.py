@@ -9,6 +9,7 @@ import click
 from dotenv import load_dotenv
 from loguru import logger
 
+from elguason import titulo_de_servicio_generator
 from .configure_cron import configure
 from .download_facturas import download_comprobantes, DownloadComprobantesConfig
 from .facturacion_report import report_from_pdfs
@@ -20,7 +21,7 @@ load_dotenv()
 
 @click.command()
 @click.option('--cuil', default=os.getenv('CUIL'))
-@click.option('--servicio', prompt='Ingresa el titulo del servicio a facturar', default='Servicios Profesionales')
+@click.option('--servicio', prompt='Ingresa el titulo del servicio a facturar', default=titulo_de_servicio_generator())
 @click.option('--monto', prompt='Ingresa el monto a facturar', default=10_000, type=click.IntRange(0))
 @click.option('--facturador', default=os.getenv('FACTURADOR'))
 @click.option('--cuitdestino', default=None, help="CUIT destinatario si monto excede limite de anonimato")
