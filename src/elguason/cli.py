@@ -158,11 +158,11 @@ def _read_password():
 
 
 @click.command()
-@click.argument('gastomensual', type=click.IntRange(1000))
+@click.argument('gastomensual', type=click.IntRange(10_000))
 @click.option('--destination', help="Where to save the plan", default='plan.csv')
-def gastomensual(gastomensual, destination):
+def planificar(gastomensual, destination):
     plan = generar_plan_de_facturacion(gastomensual)
-    total = sum(x[1] for x in plan)
+    total = sum(x.amount for x in plan)
     path = write_plan(plan, destination)
     click.echo(f"Your plan will bill {total} this month.\n"
                f"Open {path} to review it so you can then bill from it with `facturarcsv {path}`")
