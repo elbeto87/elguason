@@ -35,19 +35,20 @@ def generar_plan_de_facturacion(gastos_mensuales) -> List[FacturacionDia]:
     return montos_por_dia
 
 
-def generar_plan_de_facturacion_semestral(gastos_mensuales, first_semester=True) -> List[FacturacionDia]:
-    months_by_semester = {1: [1, 2, 3, 4, 5, 6], 0: [7, 8, 9, 10, 11, 12]}
-    year = datetime.datetime.today().year
-    return list(itertools.chain.from_iterable([
-        _generar_plan_de_facturacion_mensual(gastos_mensuales, year, mes)
-        for mes in months_by_semester[first_semester]
-    ]))
+def generar_plan_de_facturacion_semestral(gastos_mensuales, semester: int, year) -> List[FacturacionDia]:
+    assert semester in (1, 2), f"Semester must be either 1 or 2, not {semester!r}"
+    months_by_semester = {1: [1, 2, 3, 4, 5, 6], 2: [7, 8, 9, 10, 11, 12]}
+    year = year or datetime.datetime.today().year
+    facturacion_mes_a_mes = [_generar_plan_de_facturacion_mensual(gastos_mensuales, year, mes) 
+                             for mes in months_by_semester[semester]] 
+    return list(itertools.chain.from_iterable(facturacion_mes_a_mes))
 
 
 def _generar_plan_de_facturacion_mensual(gastos_mensuales, year, month) -> List[FacturacionDia]:
     _, lastdayofmonth = calendar.monthrange(year, month)
     billable_days = [datetime.date(year, month, daynum)
                      for daynum in range(1, lastdayofmonth + 1)]
+    billable_days = [x for x in billable_days if x.weekday() not in (5, 6)]
     montos_por_dia = _generar_facturacion_por_dia(gastos_mensuales, billable_days)
     return montos_por_dia
 
@@ -77,10 +78,10 @@ def _generar_facturacion_por_dia(
     """Genera montos de factura mediante una distribucion normal con mu=fact_mensual/dias"""
     cant_dias = len(billable_days)
     facturacion_por_dia = gastos_mensuales / cant_dias
-    normal_dist_from_facturacion_por_dia = statistics.NormalDist(mu=facturacion_por_dia, sigma=1500)
-    amounts = normal_dist_from_facturacion_por_dia.samples(n=cant_dias)
+    amounts = statistics.NormalDist(mu=facturacion_por_dia, sigma=1500).samples(n=cant_dias)
+
     return [
-        FacturacionDia(date, min(int(amount), 1000))  # Avoid negative or empty invoices
+        FacturacionDia(date, max(int(amount), 1000))  # Avoid negative or empty invoices
         for date, amount in zip(billable_days, amounts)
     ]
 
