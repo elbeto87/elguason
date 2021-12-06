@@ -30,7 +30,8 @@ FACTURACION_MENSUAL_MONOTRIBUTO_POR_CATEGORIA = {
 
 
 def generar_plan_de_facturacion(gastos_mensuales) -> List[FacturacionDia]:
-    billable_days: List[datetime.date] = _get_current_month_dates()
+    days: List[datetime.date] = _get_current_month_dates()
+    billable_days = [d for d in days if d.weekday() not in (5, 6)]
     montos_por_dia = _generar_facturacion_por_dia(gastos_mensuales, billable_days)
     return montos_por_dia
 
