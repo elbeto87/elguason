@@ -14,7 +14,7 @@ from .configure_cron import configure
 from .download_facturas import download_comprobantes, DownloadComprobantesConfig
 from .facturacion_report import report_from_pdfs
 from .facturar import FacturacionParameters, facturar, facturar_multiples
-from .planificar import generar_plan_de_facturacion, write_plan
+from .planificar import generar_plan_de_facturacion, generar_plan_de_facturacion_semestral, write_plan
 
 load_dotenv()
 
@@ -158,11 +158,24 @@ def _read_password():
 
 
 @click.command()
-@click.argument('gastomensual', type=click.IntRange(1000))
-@click.option('--destination', help="Where to save the plan", default='plan.csv')
-def gastomensual(gastomensual, destination):
-    plan = generar_plan_de_facturacion(gastomensual)
-    total = sum(x[1] for x in plan)
+@click.argument('gastomensual', type=click.IntRange(10_000))
+@click.argument('semester', type=click.INT)
+@click.argument('year', type=click.INT, default=datetime.datetime.today().year)
+@click.option('--destination', help="Where to save the plan", default='plan_semestral.csv')
+def planificar(gastomensual, semester, year, destination):
+    plan = generar_plan_de_facturacion_semestral(gastomensual, semester=semester, year=year)
+    total = sum(x.amount for x in plan)
     path = write_plan(plan, destination)
-    click.echo(f"Your plan will bill {total} this month.\n"
+    click.echo(f"Your plan will bill {total} this semester.\n"
                f"Open {path} to review it so you can then bill from it with `facturarcsv {path}`")
+
+
+@click.command()
+@click.argument('gastomensual', type=click.IntRange(10_000))
+@click.option('--destination', help="Where to save the plan", 
+              default=f'plan_mensual_{datetime.datetime.today().month}.csv')
+def planificar_mes(gastomensual, destination):
+    plan = generar_plan_de_facturacion(gastomensual)
+    total = sum(x.amount for x in plan)
+    path = write_plan(plan, destination)
+    click.echo(f"Your plan was saved at {path}. It will bill {total} this month.\n")
