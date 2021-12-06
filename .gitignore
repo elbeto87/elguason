@@ -146,5 +146,4 @@ venv/
 *.pdf
 *.csv
 *.json
-
-
+.facturaciones_realizadas.json

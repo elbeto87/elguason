@@ -144,8 +144,8 @@ def build_report(comprobantespath, destination):
 def configure_cron(hour, spec, log, allow_billing_past_invoices):
     """Configure cron to periodically emit invoices specified by certain csv SPEC at certain HOUR
 
-    Usage:h
-        configure_cron 18 ~/facturacionspec.csv
+    Usage:
+        crontador 18 ~/facturacionspec.csv
     """
     path = os.path.expanduser(log)
     cron = configure(hour, spec, path, allow_billing_past_invoices)

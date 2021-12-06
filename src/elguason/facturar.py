@@ -222,7 +222,7 @@ def validate_facturacion_config(config: FacturacionParameters, allow_billing_pas
 
     if config.date > today:
         raise ValueError(f"No se puede emitir facturas para el futuro. "
-                         f"Hoy es {today}, per la factura es para el {config.date}")
+                         f"Hoy es {today}, pero la factura es para el {config.date}")
     if allow_billing_past_invoices is False and config.date < today:
         raise ValueError("No se puede facturar para días anteriores si no se especifica --allow-billing-past-invoices")
 
