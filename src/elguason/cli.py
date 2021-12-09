@@ -148,7 +148,8 @@ def configure_cron(hour, spec, log, allow_billing_past_invoices):
         crontador 18 ~/facturacionspec.csv
     """
     path = os.path.expanduser(log)
-    cron = configure(hour, spec, path, allow_billing_past_invoices)
+    spec_absolute_path = Path(spec).absolute().expanduser()
+    cron = configure(hour, spec_absolute_path, path, allow_billing_past_invoices)
     logger.info(f'✅ Configured new cron as:\n{cron}\n'
                 f'See more details with `crontab -l`')
 
