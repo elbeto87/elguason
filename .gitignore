@@ -147,3 +147,4 @@ venv/
 *.csv
 *.json
 .facturaciones_realizadas.json
+.DS_Store
