@@ -78,6 +78,10 @@ def random_user_agent():
 
 def titulo_de_servicio_generator():
     return random.choice([
+        'Instalacion',
+        'Servicio de seguridad y optimizacion',
+        'Configuracion Dispositivos',
+        'Mantenimiento de Red',
         'Servicios Profesionales',
         'Soporte',
         'Consultoría',
