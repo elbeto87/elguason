@@ -14,7 +14,7 @@ from .configure_cron import configure
 from .download_facturas import download_comprobantes, DownloadComprobantesConfig
 from .facturacion_report import report_from_pdfs
 from .facturar import FacturacionParameters, facturar, facturar_multiples
-from .planificar import generar_plan_de_facturacion, generar_plan_de_facturacion_semestral, write_plan
+from .planificar import generar_plan_de_facturacion_mensual, generar_plan_de_facturacion_semestral, write_plan
 
 load_dotenv()
 
@@ -68,6 +68,14 @@ def facturar_from_monthly_csv(csvpath, cuil, facturador, destination, allow_bill
     with open(csvpath, 'r') as f:
         reader = csv.DictReader(f)
         for row in reader:
+            factura_date = datetime.datetime.strptime(row['fecha'], '%d/%m/%Y').date()
+            if factura_date > datetime.datetime.today().date():
+                logger.warning(
+                    f"Ignored an invoice set for {factura_date!s} as it is in the future. "
+                    f"({row['servicio']} - {row['monto']})"
+                )
+                continue
+
             facturas.append(
                 FacturacionParameters(
                     cuil=cuil,
@@ -176,7 +184,7 @@ def planificar(gastomensual, semester, year, destination):
 @click.option('--destination', help="Where to save the plan", 
               default=f'plan_mensual_{datetime.datetime.today().month}.csv')
 def planificar_mes(gastomensual, destination):
-    plan = generar_plan_de_facturacion(gastomensual)
+    plan = generar_plan_de_facturacion_mensual(gastomensual)
     total = sum(x.amount for x in plan)
     path = write_plan(plan, destination)
     click.echo(f"Your plan was saved at {path}. It will bill {total} this month.\n")
