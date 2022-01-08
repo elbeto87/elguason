@@ -82,7 +82,7 @@ def _generar_facturacion_por_dia(
     amounts = statistics.NormalDist(mu=facturacion_por_dia, sigma=1500).samples(n=cant_dias)
 
     return [
-        FacturacionDia(date, max(int(amount), 1000))  # Avoid negative or empty invoices
+        FacturacionDia(date, max(round(int(amount), -1), 1000))  # Avoid negative or empty invoices
         for date, amount in zip(billable_days, amounts)
     ]
 
