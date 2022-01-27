@@ -1,4 +1,6 @@
+from collections import defaultdict
 import csv
+import json
 import datetime
 import getpass
 import os
@@ -188,3 +190,19 @@ def planificar_mes(gastomensual, destination):
     total = sum(x.amount for x in plan)
     path = write_plan(plan, destination)
     click.echo(f"Your plan was saved at {path}. It will bill {total} this month.\n")
+
+
+
+@click.command()
+@click.argument('csvreport')
+def report_from_csv(csvreport):
+    with open(csvreport, 'r') as f:
+        reader = csv.DictReader(f)
+        header = next(reader)
+        by_month_year = defaultdict(lambda: 0)
+        for row in reader:
+            year, month, day = row['Fecha'].split('-')
+            key = f'{year}-{month}'
+            by_month_year[key] += int(row['Monto'])
+
+    print(json.dumps(by_month_year))
