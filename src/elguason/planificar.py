@@ -17,11 +17,11 @@ FACTURACION_ANUAL_MONOTRIBUTO_POR_CATEGORIA = {
     'A': 466_000,  # 38k
     'B': 693_000,  # 58k
     'C': 970_000,  # 80k
-    'D': 1335_000, # 111k
-    'E': 1764_000, # 147k
-    'F': 2205_000, # 183k
-    'G': 2646_000, # 220k
-    'H': 3276_000, # 273k
+    'D': 1_335_000, # 111k
+    'E': 1_764_000, # 147k
+    'F': 2_205_000, # 183k
+    'G': 2_646_000, # 220k
+    'H': 3_276_000, # 273k
 }
 FACTURACION_MENSUAL_MONOTRIBUTO_POR_CATEGORIA = {
     cat: int(val/12)
