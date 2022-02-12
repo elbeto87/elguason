@@ -16,7 +16,13 @@ from .configure_cron import configure
 from .download_facturas import download_comprobantes, DownloadComprobantesConfig
 from .facturacion_report import report_from_pdfs
 from .facturar import FacturacionParameters, facturar, facturar_multiples
-from .planificar import generar_plan_de_facturacion_mensual, generar_plan_de_facturacion_semestral, write_plan
+from .planificar import (
+    generar_plan_de_facturacion_mensual, 
+    generar_plan_de_facturacion_semestral,
+    write_plan,
+    CATEGORIAS_MONOTRIBUTO,
+    FACTURACION_MENSUAL_MONOTRIBUTO_POR_CATEGORIA,
+)
 
 load_dotenv()
 
@@ -182,10 +188,21 @@ def planificar(gastomensual, semester, year, destination):
 
 
 @click.command()
-@click.argument('gastomensual', type=click.IntRange(10_000))
+@click.option('--categoria', type=click.Choice(CATEGORIAS_MONOTRIBUTO), default=None)
+@click.option('--gastomensual', type=click.IntRange(10_000), default=None)
 @click.option('--destination', help="Where to save the plan", 
               default=f'plan_mensual_{datetime.datetime.today().month}.csv')
-def planificar_mes(gastomensual, destination):
+def planificar_mes(categoria, gastomensual, destination):
+    if not categoria and not gastomensual:
+        click.echo("Tenés que especificar --categoria <CAT> o --gastomensual <GASTO>")
+        sys.exit(1)
+    if categoria and gastomensual:
+        click.echo("No podés especificar --categoria y --gastomensual a la vez.")
+        sys.exit(1)
+
+    if categoria:
+        gastomensual = FACTURACION_MENSUAL_MONOTRIBUTO_POR_CATEGORIA[categoria.upper()]
+
     plan = generar_plan_de_facturacion_mensual(gastomensual)
     total = sum(x.amount for x in plan)
     path = write_plan(plan, destination)

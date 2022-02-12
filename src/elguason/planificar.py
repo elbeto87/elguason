@@ -29,6 +29,9 @@ FACTURACION_MENSUAL_MONOTRIBUTO_POR_CATEGORIA = {
 }
 
 
+CATEGORIAS_MONOTRIBUTO = list(FACTURACION_ANUAL_MONOTRIBUTO_POR_CATEGORIA.keys())
+
+
 def generar_plan_de_facturacion_mensual(gastos_mensuales) -> List[FacturacionDia]:
     days: List[datetime.date] = _get_current_month_dates()
     billable_days = [d for d in days if d.weekday() not in (5, 6)]
@@ -52,16 +55,6 @@ def _generar_plan_de_facturacion_mensual(gastos_mensuales, year, month) -> List[
     billable_days = [x for x in billable_days if x.weekday() not in (5, 6)]
     montos_por_dia = _generar_facturacion_por_dia(gastos_mensuales, billable_days)
     return montos_por_dia
-
-
-def _generate_billable_days_in_the_future():
-    """A day is billable if it is a future working day in the same month as the current date"""
-    today = datetime.datetime.today()
-    dates = _get_current_month_dates()
-    return [
-        date for date in dates
-        if date.day >= today.day and date.weekday() not in (5, 6)
-    ]
 
 
 def _get_current_month_dates():
