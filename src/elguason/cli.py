@@ -217,7 +217,7 @@ def _read_password():
 @click.option('--categoria', type=click.Choice(CATEGORIAS_MONOTRIBUTO), default=None)
 @click.option('--gastomensual', type=click.IntRange(10_000), default=None)
 @click.option('--destination', help="Where to save the plan", 
-              default=f'plan_mensual_{datetime.datetime.today().month}.csv')
+              default=f'plan_mensual_{datetime.datetime.today():%b}.csv')
 def create_plan(categoria, gastomensual, destination):
     """Generar plan de facturacion mensual acorde a gastos"""
     if not categoria and not gastomensual:
