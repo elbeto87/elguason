@@ -21,15 +21,9 @@ dependencies = [
     "python-crontab==2.6.0",
     "pdfminer.six==20211012",
     "loguru==0.5.3",
+    "rich-click==0.2.0"
 ]
 dynamic = ['version']
 
 [project.scripts]
-facturar = "elguason.cli:facturar_prompt"
-facturarcsv = "elguason.cli:facturar_from_monthly_csv"
-download = "elguason.cli:download_facturas"
-report = "elguason.cli:build_report"
-pormes = "elguason.cli:report_from_csv"
-crontador = "elguason.cli:configure_cron"
-planificar = "elguason.cli:planificar"
-planificarmes = "elguason.cli:planificar_mes"
+guason = "elguason.cli:app"

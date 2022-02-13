@@ -39,15 +39,6 @@ def generar_plan_de_facturacion_mensual(gastos_mensuales) -> List[FacturacionDia
     return montos_por_dia
 
 
-def generar_plan_de_facturacion_semestral(gastos_mensuales, semester: int, year) -> List[FacturacionDia]:
-    assert semester in (1, 2), f"Semester must be either 1 or 2, not {semester!r}"
-    months_by_semester = {1: [1, 2, 3, 4, 5, 6], 2: [7, 8, 9, 10, 11, 12]}
-    year = year or datetime.datetime.today().year
-    facturacion_mes_a_mes = [_generar_plan_de_facturacion_mensual(gastos_mensuales, year, mes) 
-                             for mes in months_by_semester[semester]] 
-    return list(itertools.chain.from_iterable(facturacion_mes_a_mes))
-
-
 def _generar_plan_de_facturacion_mensual(gastos_mensuales, year, month) -> List[FacturacionDia]:
     _, lastdayofmonth = calendar.monthrange(year, month)
     billable_days = [datetime.date(year, month, daynum)
