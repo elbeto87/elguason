@@ -57,7 +57,7 @@ def dump_to_json(facturas: List[Factura], saveas='facturas.json'):
     return saveas
 
 
-def report_from_pdfs(folder: str, report_folder='reports', csv=True) -> str:
+def generate_report_from_invoices(folder: str, report_folder='reports', csv=True) -> str:
     files = glob.glob(f'{folder}/*.pdf')
     if not files:
         logger.info(f'No hay PDFs de facturas en la carpeta indicada ({folder})')

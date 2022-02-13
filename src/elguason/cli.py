@@ -8,23 +8,41 @@ import sys
 from pathlib import Path
 
 import click
+import rich_click
 from dotenv import load_dotenv
 from loguru import logger
 
 from elguason import titulo_de_servicio_generator
-from .configure_cron import configure
-from .download_facturas import download_comprobantes, DownloadComprobantesConfig
-from .facturacion_report import report_from_pdfs
-from .facturar import FacturacionParameters, facturar, facturar_multiples
-from .planificar import (
+from elguason.configure_cron import configure
+from elguason.download_facturas import download_comprobantes, DownloadComprobantesConfig
+from elguason.facturacion_report import generate_report_from_invoices
+from elguason.facturar import FacturacionParameters, facturar, facturar_multiples
+from elguason.planificar import (
     generar_plan_de_facturacion_mensual, 
-    generar_plan_de_facturacion_semestral,
     write_plan,
     CATEGORIAS_MONOTRIBUTO,
     FACTURACION_MENSUAL_MONOTRIBUTO_POR_CATEGORIA,
 )
 
+
 load_dotenv()
+
+# Replace click formatters by rich-click ones
+click.Command.format_help = rich_click.rich_format_help
+click.Group.format_help = rich_click.rich_format_help
+
+
+@click.group()
+def app():
+    """Manage your invoices"""
+
+@click.group()
+def report():
+    """Download invoice data, parse it to build reports"""
+
+@click.group()
+def facturar():
+    """Create invoices for your services"""
 
 
 @click.command()
@@ -36,7 +54,8 @@ load_dotenv()
 @click.option('--ptoventa', default=1)
 @click.option('--destination', help='Destination folder of billing receipts', default=Path.cwd() / 'comprobantes')
 @click.option('--autoconfirm', default=False)
-def facturar_prompt(cuil, servicio, monto, facturador, cuitdestino, ptoventa, destination, autoconfirm):
+def now(cuil, servicio, monto, facturador, cuitdestino, ptoventa, destination, autoconfirm):
+    """Emitir factura mediante parametros provistos de forma interactiva"""
     passwd = _read_password()
     config = FacturacionParameters(
         cuil=cuil,
@@ -59,7 +78,7 @@ def facturar_prompt(cuil, servicio, monto, facturador, cuitdestino, ptoventa, de
 @click.option('--allow-billing-past-invoices', help="Set this if you want to allow billing of services in the past",
               default=False, is_flag=True)
 @click.option('--autoconfirm', default=False)
-def facturar_from_monthly_csv(csvpath, cuil, facturador, destination, allow_billing_past_invoices, autoconfirm):
+def plan(csvpath, cuil, facturador, destination, allow_billing_past_invoices, autoconfirm):
     """Emite facturas dado lo especificado en CSVPATH
 
     El csv debe tener la siguiente estructura:
@@ -79,7 +98,7 @@ def facturar_from_monthly_csv(csvpath, cuil, facturador, destination, allow_bill
             factura_date = datetime.datetime.strptime(row['fecha'], '%d/%m/%Y').date()
             if factura_date > datetime.datetime.today().date():
                 logger.warning(
-                    f"Ignored an invoice set for {factura_date!s} as it is in the future. "
+                    f"Ignored an invoice set for {factura_date:%d/%m/%Y} as it is in the future. "
                     f"({row['servicio']} - {row['monto']})"
                 )
                 continue
@@ -97,6 +116,9 @@ def facturar_from_monthly_csv(csvpath, cuil, facturador, destination, allow_bill
                     askconfirmation=not autoconfirm,
                 )
             )
+    if not facturas:
+        click.echo(f"✅ No hay nada pendiente a facturar en {csvpath}")
+        return
 
     facturar_multiples(cuil, password, facturador, facturas, allow_billing_past_invoices, os.path.join(destination, ''))
 
@@ -108,8 +130,8 @@ def facturar_from_monthly_csv(csvpath, cuil, facturador, destination, allow_bill
 @click.option('--facturador', default=os.getenv('FACTURADOR'), help='Name as it is on AFIP, case sensitive')
 @click.option('--destination', help='Destination folder of pdfs', default=os.getcwd())
 @click.option('--autoconfirm', default=False, help='Autoconfirm without user interaction required')
-def download_facturas(cuil, facturador, start, end, autoconfirm, destination):
-    """Download invoces from START date to END date. Dates must be on dd/mm/YYYY format.
+def download(cuil, facturador, start, end, autoconfirm, destination):
+    """Download invoces from START date to END date. (dd/mm/YYYY).
 
     Example:
 
@@ -140,15 +162,31 @@ def download_facturas(cuil, facturador, start, end, autoconfirm, destination):
 @click.command()
 @click.argument('comprobantespath')
 @click.option('--destination', help='Destination to save csv and json report', default=os.getcwd())
-def build_report(comprobantespath, destination):
+def build(comprobantespath, destination):
     """Build reports from pdfs stored in folder COMPROBANTESPATH
 
     Example:
 
         report comprobantes --destionation reports
     """
-    folder = report_from_pdfs(comprobantespath, destination)
+    folder = generate_report_from_invoices(comprobantespath, destination)
     click.echo(f"Report saved at {folder}")
+
+
+@click.command()
+@click.argument('csvreport')
+def earnings(csvreport):
+    """Generate earnings report based on built reports"""
+    with open(csvreport, 'r') as f:
+        reader = csv.DictReader(f)
+        header = next(reader)
+        by_month_year = defaultdict(lambda: 0)
+        for row in reader:
+            year, month, day = row['Fecha'].split('-')
+            key = f'{year}-{month}'
+            by_month_year[key] += int(row['Monto'])
+
+    print(json.dumps(by_month_year))
 
 
 @click.command()
@@ -157,7 +195,7 @@ def build_report(comprobantespath, destination):
 @click.option('--log', help="Where to store logs for cron runs.", default='~/elguason.log')
 @click.option('--allow-billing-past-invoices', help="Set this if you want to bill invoices earlier than today",
               default=False)
-def configure_cron(hour, spec, log, allow_billing_past_invoices):
+def automate(hour, spec, log, allow_billing_past_invoices):
     """Configure cron to periodically emit invoices specified by certain csv SPEC at certain HOUR
 
     Usage:
@@ -174,25 +212,14 @@ def _read_password():
     return os.getenv('PASSWORD') or getpass.getpass(f'Password (Hidden input): ')
 
 
-@click.command()
-@click.argument('gastomensual', type=click.IntRange(10_000))
-@click.argument('semester', type=click.INT)
-@click.argument('year', type=click.INT, default=datetime.datetime.today().year)
-@click.option('--destination', help="Where to save the plan", default='plan_semestral.csv')
-def planificar(gastomensual, semester, year, destination):
-    plan = generar_plan_de_facturacion_semestral(gastomensual, semester=semester, year=year)
-    total = sum(x.amount for x in plan)
-    path = write_plan(plan, destination)
-    click.echo(f"Your plan will bill {total} this semester.\n"
-               f"Open {path} to review it so you can then bill from it with `facturarcsv {path}`")
-
 
 @click.command()
 @click.option('--categoria', type=click.Choice(CATEGORIAS_MONOTRIBUTO), default=None)
 @click.option('--gastomensual', type=click.IntRange(10_000), default=None)
 @click.option('--destination', help="Where to save the plan", 
-              default=f'plan_mensual_{datetime.datetime.today().month}.csv')
-def planificar_mes(categoria, gastomensual, destination):
+              default=f'plan_mensual_{datetime.datetime.today():%b}.csv')
+def create_plan(categoria, gastomensual, destination):
+    """Generar plan de facturacion mensual acorde a gastos"""
     if not categoria and not gastomensual:
         click.echo("Tenés que especificar --categoria <CAT> o --gastomensual <GASTO>")
         sys.exit(1)
@@ -210,16 +237,18 @@ def planificar_mes(categoria, gastomensual, destination):
 
 
 
-@click.command()
-@click.argument('csvreport')
-def report_from_csv(csvreport):
-    with open(csvreport, 'r') as f:
-        reader = csv.DictReader(f)
-        header = next(reader)
-        by_month_year = defaultdict(lambda: 0)
-        for row in reader:
-            year, month, day = row['Fecha'].split('-')
-            key = f'{year}-{month}'
-            by_month_year[key] += int(row['Monto'])
+report.add_command(download)
+report.add_command(build)
+report.add_command(earnings)
 
-    print(json.dumps(by_month_year))
+facturar.add_command(now)
+facturar.add_command(plan)
+
+
+app.add_command(create_plan)
+app.add_command(report)
+app.add_command(facturar)
+
+
+if __name__ == "__main__":
+    app()
