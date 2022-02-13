@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 import click
+import rich_click
 from dotenv import load_dotenv
 from loguru import logger
 
@@ -23,6 +24,10 @@ from elguason.planificar import (
     CATEGORIAS_MONOTRIBUTO,
     FACTURACION_MENSUAL_MONOTRIBUTO_POR_CATEGORIA,
 )
+
+click.Command.format_help = rich_click.rich_format_help
+click.Group.format_help = rich_click.rich_format_help
+
 
 load_dotenv()
 
