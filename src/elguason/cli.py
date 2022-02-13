@@ -27,7 +27,7 @@ from elguason.planificar import (
 
 load_dotenv()
 
-
+# Replace click formatters by rich-click ones
 click.Command.format_help = rich_click.rich_format_help
 click.Group.format_help = rich_click.rich_format_help
 
