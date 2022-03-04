@@ -16,7 +16,7 @@ from elguason import titulo_de_servicio_generator
 from elguason.configure_cron import configure
 from elguason.download_facturas import download_comprobantes, DownloadComprobantesConfig
 from elguason.facturacion_report import generate_report_from_invoices
-from elguason.facturar import FacturacionParameters, facturar, facturar_multiples
+from elguason.facturar import FacturacionParameters, facturar as facturar_una, facturar_multiples
 from elguason.planificar import (
     generar_plan_de_facturacion_mensual, 
     write_plan,
@@ -31,6 +31,11 @@ load_dotenv()
 click.Command.format_help = rich_click.rich_format_help
 click.Group.format_help = rich_click.rich_format_help
 
+rich_click.core.COMMAND_GROUPS = {
+    "guason": [{"commands": ["create-plan", "facturar", "report"]}],
+    "guason report": [{"commands": ["build",  "download", "earnings"], "name": "Commands"}],
+    "guason facturar": [{"commands": ["now",  "plan"], "name": "Commands"}],
+}
 
 @click.group()
 def app():
@@ -38,11 +43,11 @@ def app():
 
 @click.group()
 def report():
-    """Download invoice data, parse it to build reports"""
+    """Entrypoing for commands about reports"""
 
 @click.group()
 def facturar():
-    """Create invoices for your services"""
+    """Subcommand for commands about facturar"""
 
 
 @click.command()
@@ -67,7 +72,7 @@ def now(cuil, servicio, monto, facturador, cuitdestino, ptoventa, destination, a
         service_amount=monto,
         askconfirmation=not autoconfirm,
     )
-    facturar(config=config, destination=os.path.join(destination, ''))
+    facturar_una(config=config, destination=os.path.join(destination, ''))
 
 
 @click.command()

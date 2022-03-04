@@ -21,7 +21,7 @@ dependencies = [
     "python-crontab==2.6.0",
     "pdfminer.six==20211012",
     "loguru==0.5.3",
-    "rich-click==0.2.0"
+    "rich-click==1.2.1"
 ]
 dynamic = ['version']
 
