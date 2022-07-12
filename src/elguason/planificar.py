@@ -14,14 +14,14 @@ FacturacionDia = namedtuple('FacturacionDia', 'date amount')
 
 FACTURACION_ANUAL_MONOTRIBUTO_POR_CATEGORIA = {
     # See https://www.afip.gob.ar/monotributo/categorias.asp
-    'A': 466_000,  # 38k
-    'B': 693_000,  # 58k
-    'C': 970_000,  # 80k
-    'D': 1_335_000, # 111k
-    'E': 1_764_000, # 147k
-    'F': 2_205_000, # 183k
-    'G': 2_646_000, # 220k
-    'H': 3_276_000, # 273k
+    'A': 748_000,   # 62k
+    'B': 1_112_000, # 93k
+    'C': 1_557_000, # 130k
+    'D': 1_934_000, # 161k
+    'E': 2_277_000, # 189k
+    'F': 2_847_000, # 237k
+    'G': 3_416_000, # 284k
+    'H': 4_230_000, # 352k
 }
 FACTURACION_MENSUAL_MONOTRIBUTO_POR_CATEGORIA = {
     cat: int(val/12)
