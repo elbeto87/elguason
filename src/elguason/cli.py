@@ -7,8 +7,7 @@ import os
 import sys
 from pathlib import Path
 
-import click
-import rich_click
+import rich_click as click
 from dotenv import load_dotenv
 from loguru import logger
 
@@ -27,15 +26,6 @@ from elguason.planificar import (
 
 load_dotenv()
 
-# Replace click formatters by rich-click ones
-click.Command.format_help = rich_click.rich_format_help
-click.Group.format_help = rich_click.rich_format_help
-
-rich_click.core.COMMAND_GROUPS = {
-    "guason": [{"commands": ["create-plan", "facturar", "report"]}],
-    "guason report": [{"commands": ["build",  "download", "earnings"], "name": "Commands"}],
-    "guason facturar": [{"commands": ["now",  "plan"], "name": "Commands"}],
-}
 
 @click.group()
 def app():
