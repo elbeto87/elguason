@@ -1,6 +1,5 @@
 from collections import defaultdict
 import csv
-import json
 import datetime
 import getpass
 import os
@@ -21,6 +20,7 @@ from elguason.planificar import (
     write_plan,
     CATEGORIAS_MONOTRIBUTO,
     FACTURACION_MENSUAL_MONOTRIBUTO_POR_CATEGORIA,
+    FACTURACION_ANUAL_MONOTRIBUTO_POR_CATEGORIA,
 )
 
 
@@ -149,7 +149,7 @@ def download(cuil, facturador, start, end, autoconfirm, destination):
         start_date=start_date,
         end_date=end_date,
         askconfirmation=not autoconfirm,
-        download_folder=destination or os.getcwd()
+        download_folder=destination
     ))
     click.echo(f"Comprobantes saved at {savepath}")
 
@@ -181,7 +181,13 @@ def earnings(csvreport):
             key = f'{year}-{month}'
             by_month_year[key] += int(row['Monto'])
 
-    print(json.dumps(by_month_year))
+
+    with open('facturacion_por_mes.csv', 'w') as f:
+        writer = csv.writer(f)
+        writer.writerow(["Date", "Total"])
+        for key, value in by_month_year.items():
+            writer.writerow((key, value))
+
 
 
 @click.command()
@@ -231,6 +237,15 @@ def create_plan(categoria, gastomensual, destination):
     click.echo(f"Your plan was saved at {path}. It will bill {total} this month.\n")
 
 
+@click.command()
+def categorias():
+    # Categoria: X, Mensual, Anual
+    for cat in CATEGORIAS_MONOTRIBUTO:
+        facturacion_mensual = FACTURACION_MENSUAL_MONOTRIBUTO_POR_CATEGORIA[cat]
+        facturacion_anual = FACTURACION_ANUAL_MONOTRIBUTO_POR_CATEGORIA[cat]
+        print(f"Categoria {cat}\nMensual: {facturacion_mensual:_}, Anual {facturacion_anual:_}\n")
+
+
 
 report.add_command(download)
 report.add_command(build)
@@ -243,6 +258,7 @@ facturar.add_command(plan)
 app.add_command(create_plan)
 app.add_command(report)
 app.add_command(facturar)
+app.add_command(categorias)
 
 
 if __name__ == "__main__":

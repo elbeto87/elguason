@@ -47,6 +47,12 @@ def run_download(
             page.click("text=Facturas Emitidas")
         page1 = popup_info.value
 
+    # After clicking Emitir Facturas, a redirect opens a new page that requires creds again
+    page1.fill("input[name=\"F1:username\"]", config.cuil)
+    page1.press("input[name=\"F1:username\"]", "Enter")
+    page1.fill("input[name=\"F1:password\"]", config.password)
+    page1.press("input[name=\"F1:password\"]", "Enter")
+    
     # Click on facturador button
     page1.click(f"input[role=\"button\"]:has-text(\"{config.facturador_name}\")")
 
