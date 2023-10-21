@@ -39,15 +39,6 @@ def generar_plan_de_facturacion_mensual(gastos_mensuales) -> List[FacturacionDia
     return montos_por_dia
 
 
-def _generar_plan_de_facturacion_mensual(gastos_mensuales, year, month) -> List[FacturacionDia]:
-    _, lastdayofmonth = calendar.monthrange(year, month)
-    billable_days = [datetime.date(year, month, daynum)
-                     for daynum in range(1, lastdayofmonth + 1)]
-    billable_days = [x for x in billable_days if x.weekday() not in (5, 6)]
-    montos_por_dia = _generar_facturacion_por_dia(gastos_mensuales, billable_days)
-    return montos_por_dia
-
-
 def _get_current_month_dates():
     """Get all dates of the current month"""
     today = datetime.datetime.today()
