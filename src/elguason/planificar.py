@@ -70,7 +70,7 @@ def _generar_facturacion_por_dia_pocos_dias(
     cant_dias = len(billable_days) / 2
     facturacion_por_dia = gastos_mensuales / cant_dias
     print(facturacion_por_dia)
-    amounts = statistics.NormalDist(mu=facturacion_por_dia, sigma=1500).samples(n=int(cant_dias))
+    amounts = statistics.NormalDist(mu=facturacion_por_dia, sigma=3000).samples(n=int(cant_dias))
 
     noise1 = random.choice([x for x in range(-5000, 5000, 500)])
 
