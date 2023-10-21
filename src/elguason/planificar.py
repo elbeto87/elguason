@@ -67,8 +67,9 @@ def _generar_facturacion_por_dia_pocos_dias(
         gastos_mensuales, billable_days: List[datetime.date]
 ) -> List[FacturacionDia]:
     """Genera montos de factura mediante una distribucion normal con mu=fact_mensual/dias"""
-    cant_dias = len(billable_days) / 3
+    cant_dias = len(billable_days) / 2
     facturacion_por_dia = gastos_mensuales / cant_dias
+    print(facturacion_por_dia)
     amounts = statistics.NormalDist(mu=facturacion_por_dia, sigma=1500).samples(n=int(cant_dias))
 
     noise1 = random.choice([x for x in range(-5000, 5000, 500)])
@@ -76,7 +77,7 @@ def _generar_facturacion_por_dia_pocos_dias(
 
     return [
         FacturacionDia(date, min(max(round(int(amount), -1), 1000) + noise1, 43000))  # Avoid negative or empty invoices
-        for date, amount in zip(billable_days[::5], amounts)  # Facturar cada 5 dias
+        for date, amount in zip(billable_days[::2], amounts)  # Facturar cada 2 dias
     ]
 
 
