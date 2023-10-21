@@ -2,6 +2,7 @@ import calendar
 import csv
 import datetime
 import itertools
+import random
 import statistics
 from collections import namedtuple
 from typing import List
@@ -35,7 +36,7 @@ CATEGORIAS_MONOTRIBUTO = list(FACTURACION_ANUAL_MONOTRIBUTO_POR_CATEGORIA.keys()
 def generar_plan_de_facturacion_mensual(gastos_mensuales) -> List[FacturacionDia]:
     days: List[datetime.date] = _get_current_month_dates()
     billable_days = [d for d in days if d.weekday() not in (5, 6)]
-    montos_por_dia = _generar_facturacion_por_dia(gastos_mensuales, billable_days)
+    montos_por_dia = _generar_facturacion_por_dia_pocos_dias(gastos_mensuales, billable_days)
     return montos_por_dia
 
 
@@ -59,6 +60,23 @@ def _generar_facturacion_por_dia(
     return [
         FacturacionDia(date, max(round(int(amount), -1), 1000))  # Avoid negative or empty invoices
         for date, amount in zip(billable_days, amounts)
+    ]
+
+
+def _generar_facturacion_por_dia_pocos_dias(
+        gastos_mensuales, billable_days: List[datetime.date]
+) -> List[FacturacionDia]:
+    """Genera montos de factura mediante una distribucion normal con mu=fact_mensual/dias"""
+    cant_dias = len(billable_days) / 3
+    facturacion_por_dia = gastos_mensuales / cant_dias
+    amounts = statistics.NormalDist(mu=facturacion_por_dia, sigma=1500).samples(n=int(cant_dias))
+
+    noise1 = random.choice([x for x in range(-5000, 5000, 500)])
+
+
+    return [
+        FacturacionDia(date, min(max(round(int(amount), -1), 1000) + noise1, 43000))  # Avoid negative or empty invoices
+        for date, amount in zip(billable_days[::5], amounts)  # Facturar cada 5 dias
     ]
 
 
