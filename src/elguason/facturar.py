@@ -21,6 +21,9 @@ class FacturacionParameters:
     cuit_receptor: str
     punto_de_venta: int
     askconfirmation: bool = True
+    date_from: datetime.date = None
+    date_to: datetime.date = None
+    date_payment: datetime.date = None
     date: datetime.date = datetime.datetime.today().date()
 
     def __str__(self):
@@ -169,10 +172,17 @@ def generar_factura(config, page1):
     # Completamos la fecha de la factura. Normalmente va a ser la del dia de 'hoy' y no haria falta
     # Pero tambien puede ser la de 10 dias antes (limite de facturacion retroactiva de servicios)
     # Entonces la llenamos siempre, incluso si ya esta en el valor deseado.
-    date_str = config.date.strftime('%d/%m/%Y')
-    page1.fill("input[name=\"periodoFacturadoDesde\"]", date_str)
-    page1.fill("input[name=\"periodoFacturadoHasta\"]", date_str)
-    # El dia de vencimiento tambien es input, pero siempre debe ser hoy, sino no vale facturarlo
+    if config.date_from is not None and config.date_to is not None:
+        date_from = config.date_from.strftime('%d/%m/%Y')
+        date_to = config.date_to.strftime('%d/%m/%Y')
+        date_payment = config.date_payment.strftime('%d/%m/%Y')
+
+    else:
+        date_from = date_to = date_payment = config.date.strftime('%d/%m/%Y')
+
+    page1.fill("input[name=\"periodoFacturadoDesde\"]", date_from)
+    page1.fill("input[name=\"periodoFacturadoHasta\"]", date_to)
+    page1.fill("input[name=\"vencimientoPago\"]", date_payment)
 
     page1.click("text=Continuar >")
     logger.info(

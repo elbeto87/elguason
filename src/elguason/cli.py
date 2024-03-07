@@ -15,8 +15,9 @@ from elguason.configure_cron import configure
 from elguason.download_facturas import download_comprobantes, DownloadComprobantesConfig
 from elguason.facturacion_report import generate_report_from_invoices
 from elguason.facturar import FacturacionParameters, facturar as facturar_una, facturar_multiples
+from elguason.utils import parse_date
 from elguason.planificar import (
-    generar_plan_de_facturacion_mensual, 
+    generar_plan_de_facturacion_mensual,
     write_plan,
     CATEGORIAS_MONOTRIBUTO,
     FACTURACION_MENSUAL_MONOTRIBUTO_POR_CATEGORIA,
@@ -104,6 +105,9 @@ def plan(csvpath, cuil, facturador, destination, allow_billing_past_invoices, au
                     password=password,
                     facturador=facturador,
                     date=datetime.datetime.strptime(row['fecha'], '%d/%m/%Y').date(),
+                    date_from=parse_date(row.get('fecha_desde')),
+                    date_to=parse_date(row.get('fecha_hasta')),
+                    date_payment=parse_date(row.get('fecha_pago')),
                     service_name=row['servicio'],
                     service_amount=int(row['monto']),
                     cuit_receptor=row['cuit_destino'],
@@ -217,7 +221,7 @@ def _read_password():
 @click.command()
 @click.option('--categoria', type=click.Choice(CATEGORIAS_MONOTRIBUTO), default=None)
 @click.option('--gastomensual', type=click.IntRange(10_000), default=None)
-@click.option('--destination', help="Where to save the plan", 
+@click.option('--destination', help="Where to save the plan",
               default=f'plan_mensual_{datetime.datetime.today():%b}.csv')
 def create_plan(categoria, gastomensual, destination):
     """Generar plan de facturacion mensual acorde a gastos"""
