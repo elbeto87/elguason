@@ -15,26 +15,11 @@ from pathlib import Path
 from typing import List, Optional
 
 from loguru import logger
-from openpyxl import load_workbook, Workbook
-from openpyxl.styles import Font, PatternFill, Alignment
+from openpyxl import load_workbook
 
 
 NOMBRE_ARCHIVO_PACIENTES = "pacientes.xlsx"
 
-COLUMNAS_PACIENTES = [
-    "nombre y apellido",
-    "cuit",
-    "numero de sesiones",
-    "honorarios por sesion",
-    "total",
-]
-
-# Filas de ejemplo para el template (se pueden borrar/editar libremente)
-PACIENTES_EJEMPLO = [
-    ("Juan Perez", "20123456789", 4, 5000),
-    ("Ana Gomez", "27111111119", 2, 8000),
-    ("Carlos Diaz", "20333333338", 1, 12000),
-]
 
 
 @dataclass
@@ -137,57 +122,3 @@ def leer_pacientes(path: Optional[Path] = None) -> List[Paciente]:
 
     logger.info(f"Se leyeron {len(pacientes)} pacientes del Excel")
     return pacientes
-
-
-def crear_template(path: Optional[Path] = None, con_ejemplos: bool = True) -> Path:
-    """Crea un Excel template para el comando ``guason facturar sol``.
-
-    Genera el archivo con los encabezados esperados, la columna ``total`` como
-    fórmula (``sesiones * honorarios``) y, opcionalmente, algunas filas de ejemplo.
-    Por defecto lo guarda como ``pacientes.xlsx`` en el escritorio.
-
-    No sobrescribe un archivo existente: si ya hay uno en ``path`` levanta
-    ``FileExistsError`` para no pisar datos reales.
-    """
-    path = path or ruta_excel_pacientes()
-    if path.exists():
-        raise FileExistsError(
-            f"Ya existe un archivo en {path}. Borralo o elegí otra ruta para no pisar tus datos."
-        )
-
-    path.parent.mkdir(parents=True, exist_ok=True)
-
-    workbook = Workbook()
-    sheet = workbook.active
-    sheet.title = "pacientes"
-
-    # Encabezados con estilo
-    header_font = Font(bold=True, color="FFFFFF")
-    header_fill = PatternFill("solid", fgColor="4472C4")
-    for col_idx, titulo in enumerate(COLUMNAS_PACIENTES, start=1):
-        cell = sheet.cell(row=1, column=col_idx, value=titulo)
-        cell.font = header_font
-        cell.fill = header_fill
-        cell.alignment = Alignment(horizontal="center")
-
-    # Filas de ejemplo con la columna total como fórmula
-    if con_ejemplos:
-        for fila_idx, (nombre, cuit, sesiones, honorarios) in enumerate(PACIENTES_EJEMPLO, start=2):
-            sheet.cell(row=fila_idx, column=1, value=nombre)
-            # El cuit como texto para no perder ceros a la izquierda
-            sheet.cell(row=fila_idx, column=2, value=cuit).number_format = "@"
-            sheet.cell(row=fila_idx, column=3, value=sesiones)
-            sheet.cell(row=fila_idx, column=4, value=honorarios)
-            sheet.cell(row=fila_idx, column=5, value=f"=C{fila_idx}*D{fila_idx}")
-
-    # Ancho de columnas para que se lea cómodo
-    anchos = {"A": 24, "B": 16, "C": 20, "D": 22, "E": 14}
-    for col, ancho in anchos.items():
-        sheet.column_dimensions[col].width = ancho
-
-    workbook.save(path)
-    logger.info(f"Template de pacientes creado en {path}")
-    return path
-
-
-
