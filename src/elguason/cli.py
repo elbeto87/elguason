@@ -15,6 +15,7 @@ from elguason.configure_cron import configure
 from elguason.download_facturas import download_comprobantes, DownloadComprobantesConfig
 from elguason.facturacion_report import generate_report_from_invoices
 from elguason.facturar import FacturacionParameters, facturar as facturar_una, facturar_multiples
+from elguason.pacientes import leer_pacientes, ruta_excel_pacientes
 from elguason.utils import parse_date
 from elguason.planificar import (
     generar_plan_de_facturacion_mensual,
@@ -119,6 +120,56 @@ def plan(csvpath, cuil, facturador, destination, allow_billing_past_invoices, au
         click.echo(f"✅ No hay nada pendiente a facturar en {csvpath}")
         return
 
+    facturar_multiples(cuil, password, facturador, facturas, allow_billing_past_invoices, os.path.join(destination, ''))
+
+
+@click.command()
+@click.option('--cuil', default=os.getenv('CUIL'))
+@click.option('--facturador', default=os.getenv('FACTURADOR'))
+@click.option('--destination', help='Destination folder of billing receipts', default=Path.cwd() / 'comprobantes')
+@click.option('--allow-billing-past-invoices', help="Set this if you want to allow billing of services in the past",
+              default=False, is_flag=True)
+@click.option('--autoconfirm', default=False)
+def sol(cuil, facturador, destination, allow_billing_past_invoices, autoconfirm):
+    """Facturar a los pacientes del Excel 'pacientes.xlsx' del escritorio.
+
+    Busca un archivo llamado 'pacientes' en el escritorio con las columnas:
+
+        nombre y apellido | cuit | numero de sesiones | honorarios por sesion | total
+
+    Por cada paciente emite una factura por el total (sesiones * honorarios).
+    """
+    password = _read_password()
+    try:
+        pacientes = leer_pacientes()
+    except FileNotFoundError as e:
+        logger.error(str(e))
+        sys.exit(1)
+
+    facturas = []
+    for paciente in pacientes:
+        facturas.append(
+            FacturacionParameters(
+                cuil=cuil,
+                password=password,
+                facturador=facturador,
+                service_name=f"Sesiones - {paciente.nombre_y_apellido}",
+                service_amount=paciente.total,
+                cuit_receptor=paciente.cuit,
+                punto_de_venta=1,
+                askconfirmation=not autoconfirm,
+            )
+        )
+
+    if not facturas:
+        click.echo(f"✅ No hay pacientes para facturar en {ruta_excel_pacientes()}")
+        return
+
+    # TODO: El "caminito" via Playwright para facturar a pacientes puede diferir del
+    #  flujo estandar de `generar_factura` en facturar.py (por ejemplo, otro tipo de
+    #  comprobante, receptor, o campos especificos del rubro salud/psicologia).
+    #  Por ahora se reutiliza `facturar_multiples`, revisar y ajustar el flujo real
+    #  cuando se conozcan las diferencias en la web de AFIP/ARCA.
     facturar_multiples(cuil, password, facturador, facturas, allow_billing_past_invoices, os.path.join(destination, ''))
 
 
@@ -257,6 +308,7 @@ report.add_command(earnings)
 
 facturar.add_command(now)
 facturar.add_command(plan)
+facturar.add_command(sol)
 
 
 app.add_command(create_plan)
