@@ -124,22 +124,23 @@ def plan(csvpath, cuil, facturador, destination, allow_billing_past_invoices, au
 
 
 @click.command()
-@click.option('--cuil', default=os.getenv('CUIL'))
-@click.option('--facturador', default=os.getenv('FACTURADOR'))
-@click.option('--destination', help='Destination folder of billing receipts', default=Path.cwd() / 'comprobantes')
-@click.option('--allow-billing-past-invoices', help="Set this if you want to allow billing of services in the past",
-              default=False, is_flag=True)
-@click.option('--autoconfirm', default=False)
-def sol(cuil, facturador, destination, allow_billing_past_invoices, autoconfirm):
+def sol():
     """Facturar a los pacientes del Excel 'pacientes.xlsx' del escritorio.
 
-    Busca un archivo llamado 'pacientes' en el escritorio con las columnas:
+    No recibe parámetros: el CUIL y el facturador se leen del .env
+    (variables CUIL y FACTURADOR) y los pacientes del Excel del escritorio,
+    con las columnas:
 
         nombre y apellido | cuit | numero de sesiones | honorarios por sesion | total
 
     Por cada paciente emite una factura por el total (sesiones * honorarios).
     """
+    cuil = os.getenv('CUIL')
+    facturador = os.getenv('FACTURADOR')
     password = _read_password()
+    destination = Path.cwd() / 'comprobantes'
+    allow_billing_past_invoices = False
+
     try:
         pacientes = leer_pacientes()
     except FileNotFoundError as e:
@@ -157,7 +158,6 @@ def sol(cuil, facturador, destination, allow_billing_past_invoices, autoconfirm)
                 service_amount=paciente.total,
                 cuit_receptor=paciente.cuit,
                 punto_de_venta=1,
-                askconfirmation=not autoconfirm,
             )
         )
 
