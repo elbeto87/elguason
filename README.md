@@ -24,6 +24,18 @@ cp .env.sample .env
 #### `guason facturar plan PLAN`
 > Emite multiples factures segun lo especificado en el csv ingresado
 
+## Quiero facturarle a todos mis pacientes desde un Excel
+#### `guason facturar sol`
+> Emite una factura por cada paciente cargado en el Excel `pacientes.xlsx` del escritorio. Por cada paciente factura el total (sesiones × honorarios por sesión) al CUIT indicado. El CUIL y el facturador se leen del `.env`.
+>
+> El Excel debe tener las columnas: `nombre y apellido | cuit | numero de sesiones | honorarios por sesion | total`
+
+## Quiero generar el Excel template para facturar a mis pacientes
+#### `guason facturar template`
+> Crea `pacientes.xlsx` en el escritorio con los encabezados esperados por `guason facturar sol`. La columna `total` viene como fórmula (sesiones × honorarios).
+>
+> Opciones: `--destination RUTA` para elegir dónde guardarlo y `--sin-ejemplos` para generarlo sin filas de ejemplo.
+
 ## Quiero descargar los comprobantes de todas mis facturas en cierto rango de fechas
 #### `guason reports download START END --destination comprobantes`
 > Descarga facturas emitidas desde la fecha START hasta la fecha END y las guarda en el destino especificado
