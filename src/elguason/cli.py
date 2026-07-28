@@ -15,7 +15,7 @@ from elguason.configure_cron import configure
 from elguason.download_facturas import download_comprobantes, DownloadComprobantesConfig
 from elguason.facturacion_report import generate_report_from_invoices
 from elguason.facturar import FacturacionParameters, facturar as facturar_una, facturar_multiples
-from elguason.pacientes import leer_pacientes, ruta_excel_pacientes
+from elguason.pacientes import leer_pacientes, ruta_excel_pacientes, crear_template
 from elguason.utils import parse_date
 from elguason.planificar import (
     generar_plan_de_facturacion_mensual,
@@ -174,6 +174,28 @@ def sol(cuil, facturador, destination, allow_billing_past_invoices, autoconfirm)
 
 
 @click.command()
+@click.option('--destination', help="Ruta donde guardar el template (default: pacientes.xlsx en el escritorio)",
+              default=None)
+@click.option('--sin-ejemplos', is_flag=True, default=False, help="Genera el template sin filas de ejemplo")
+def template(destination, sin_ejemplos):
+    """Crear un Excel template para 'facturar sol' con las columnas esperadas.
+
+    Genera 'pacientes.xlsx' en el escritorio con los encabezados:
+
+        nombre y apellido | cuit | numero de sesiones | honorarios por sesion | total
+
+    La columna 'total' viene como fórmula (sesiones * honorarios).
+    """
+    path = Path(destination).expanduser() if destination else None
+    try:
+        creado = crear_template(path=path, con_ejemplos=not sin_ejemplos)
+    except FileExistsError as e:
+        logger.error(str(e))
+        sys.exit(1)
+    click.echo(f"✅ Template creado en {creado}")
+
+
+@click.command()
 @click.argument('start')
 @click.argument('end')
 @click.option('--cuil', default=os.getenv('CUIL'))
@@ -309,6 +331,7 @@ report.add_command(earnings)
 facturar.add_command(now)
 facturar.add_command(plan)
 facturar.add_command(sol)
+facturar.add_command(template)
 
 
 app.add_command(create_plan)
