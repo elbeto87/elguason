@@ -149,9 +149,8 @@ def generar_factura_sol(config: FacturacionParameters, page1):
     page1.select_option("select[name=\"idIVAReceptor\"]", value="5") # CONSUMIDOR FINAL
 
     # 8. CUIT del paciente
-    if config.cuit_receptor:
-        page1.click("input[name=\"nroDocReceptor\"]")
-        page1.fill("input[name=\"nroDocReceptor\"]", config.cuit_receptor)
+    page1.click("input[name=\"nroDocReceptor\"]")
+    page1.fill("input[name=\"nroDocReceptor\"]", config.cuit_receptor)
 
     # 9. Medio de pago (del Excel)
     if config.payment_method:
