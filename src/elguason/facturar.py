@@ -19,7 +19,7 @@ class FacturacionParameters:
     service_name: str
     service_amount: int
     cuit_receptor: str
-    punto_de_venta: int
+    punto_de_venta: str
     askconfirmation: bool = True
     date_from: datetime.date = None
     date_to: datetime.date = None
@@ -128,7 +128,7 @@ def generar_factura_sol(config: FacturacionParameters, page1):
 
     Pasos (según pedido):
         3. Generar comprobante
-        4. Como psicóloga (actividad número 04)
+        4. Punto de Venta a utilizar
         5. Factura C
         6. Fecha del comprobante
         7. Servicio de "Tratamiento"
@@ -141,24 +141,14 @@ def generar_factura_sol(config: FacturacionParameters, page1):
     # 3. Generar comprobante
     page1.click("a[role=\"button\"]:has-text(\"Generar Comprobantes\")")
 
-    # 4. Elegir la actividad como psicóloga (número 04)
-    # TODO: Confirmar el selector real de la pantalla de AFIP/ARCA para elegir la
-    #  actividad. Se desconoce el `name`/estructura exacta del <select> (podría ser
-    #  algo como `select[name="actividad"]`) y si "04" es el `value` o solo parte del
-    #  texto de la opción. Dejar sin completar hasta verificarlo en la web real.
-    # if config.actividad:
-    #     page1.select_option("select[name=\"actividad\"]", config.actividad)
-
     logger.info('Eligiendo punto de venta y tipo de factura (Factura C)')
-    page1.select_option("select[name=\"puntoDeVenta\"]", str(config.punto_de_venta))
+
+    # 4. Punto de Venta a utilizar
+    page1.select_option("select[name=\"puntoDeVenta\"]", config.punto_de_venta)
+
     # 5. Factura C: se autoselecciona en el segundo dropdown al elegir punto de venta
     time.sleep(2)
     page1.click("text=Continuar >")
-
-    # 7. Servicio de tratamiento -> concepto "Servicios"
-    logger.info('Ingresando concepto: Servicios')
-    servicios = "2"
-    page1.select_option("select[name=\"idConcepto\"]", servicios)
 
     # 6. Fecha del comprobante / período facturado
     if config.date_from is not None and config.date_to is not None:
@@ -172,6 +162,12 @@ def generar_factura_sol(config: FacturacionParameters, page1):
     page1.fill("input[name=\"periodoFacturadoHasta\"]", date_to)
     page1.fill("input[name=\"vencimientoPago\"]", date_payment)
     page1.click("text=Continuar >")
+
+
+    # 7. Servicio de tratamiento -> concepto "Servicios"
+    logger.info('Ingresando concepto: Servicios')
+    servicios = "2"
+    page1.select_option("select[name=\"idConcepto\"]", servicios)
 
     # 8. Consumidor final
     logger.info('Receptor: consumidor final')

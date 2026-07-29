@@ -78,7 +78,7 @@ def sol():
                 service_units=paciente.numero_de_sesiones,
                 payment_method=paciente.medio_de_pago or None,
                 cuit_receptor=paciente.cuit,
-                punto_de_venta=1,
+                punto_de_venta="0004-Olazabal Av. 5031 - Ciudad de Buenos Aires",
                 # Actividad de psicología. El flujo de `sol` la usa (paso 04).
                 actividad="04",
             )
