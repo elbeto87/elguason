@@ -87,7 +87,11 @@ def _read_password():
     return os.getenv('PASSWORD') or getpass.getpass(f'Password (Hidden input): ')
 
 
+# Registrar comando sol en el grupo facturar
 facturar.add_command(sol)
+
+# Registrar grupo facturar en la app principal
+app.add_command(facturar)
 
 
 if __name__ == "__main__":

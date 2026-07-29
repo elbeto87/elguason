@@ -56,12 +56,6 @@ class FacturacionParameters:
         return json.dumps(self.to_dict())
 
 
-LIMITE_FACTURACION_ANONIMA = 12500
-HERE = Path(__file__).absolute().parent
-invoicespath = HERE / '.facturaciones_realizadas.json'
-
-
-
 def facturar_sol(
         cuil,
         password,
@@ -78,8 +72,6 @@ def facturar_sol(
         - Medio de pago tomado del Excel
         - Cantidad de unidades (sesiones) y honorarios por unidad
     """
-    # Validate
-    validate_we_dont_repeat_any_invoice(facturaciones)
     for facturacion_config in facturaciones:
         validate_facturacion_config(facturacion_config, allow_billing_past_invoices)
 
@@ -99,8 +91,6 @@ def facturar_sol(
         context.close()
         logger.info("Facturaciones a pacientes finalizadas ✨")
         browser.close()
-
-    mark_invoices_as_already_billed(configs=facturaciones)
 
 
 def repeat_facturacion_sol(page1, facturaciones, destination):
@@ -264,8 +254,6 @@ def descargar_factura(page1, destination):
 
 def validate_facturacion_config(config: FacturacionParameters, allow_billing_past_invoices: bool):
     today = datetime.datetime.today().date()
-    if config.service_amount > LIMITE_FACTURACION_ANONIMA and not config.cuit_receptor:
-        raise ValueError(f'Para facturar {config.service_amount} se requiere CUIT de consumidor final')
 
     if config.date > today:
         raise ValueError(f"No se puede emitir facturas para el futuro. "
@@ -277,24 +265,3 @@ def validate_facturacion_config(config: FacturacionParameters, allow_billing_pas
         raise ValueError("No se puede facturar servicios realizados hace mas de 10 dias")
 
     return today
-
-
-def validate_we_dont_repeat_any_invoice(configs: List[FacturacionParameters]):
-    """Perhaps delegate logic into class??"""
-    with open(invoicespath, 'r') as f:
-        oldfacturas = json.load(f)
-
-    for config in configs:
-        if config.to_dict() in oldfacturas:
-            raise ValueError(f"{config} was already billed. Aborting because we can't allow double billing")
-
-
-def mark_invoices_as_already_billed(configs: List[FacturacionParameters]):
-    """We arbitrarily assume one can idenitify an invoice univocally by cuil, date, service, monto and cuit dest"""
-    with open(invoicespath, 'r') as f:
-        oldfacturas = json.load(f)
-
-    newfacturas = [x.to_dict() for x in configs]
-    oldfacturas.extend(newfacturas)
-    with open(invoicespath, 'w') as f:
-        json.dump(oldfacturas, f, indent=2, ensure_ascii=False, sort_keys=True)
