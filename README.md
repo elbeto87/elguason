@@ -15,41 +15,32 @@ cp .env.sample .env
 ![usage](meta/guasonhelp.png)
 
 
-## Quiero hacer una factura para hoy 
-
-#### `guason facturar now`
-> Emite una factura de forma automatica, recibiendo el monto, el servicio, y el destinatario del mismo.
-
-## Quiero generar facturas para distintos dias por distintos montos
-#### `guason facturar plan PLAN`
-> Emite multiples factures segun lo especificado en el csv ingresado
-
 ## Quiero facturarle a todos mis pacientes desde un Excel
 #### `guason facturar sol`
-> Emite una factura por cada paciente cargado en el Excel `pacientes.xlsx` del escritorio. Por cada paciente factura el total (sesiones × honorarios por sesión) al CUIT indicado. El CUIL y el facturador se leen del `.env`.
+> Emite una factura por cada paciente cargado en el Excel `pacientes.xlsx` del escritorio. Emite una **Factura C** como psicóloga (actividad 04) a **consumidor final**, con el CUIT del paciente. Por cada paciente factura el total (sesiones × honorarios por sesión), tomando la cantidad de sesiones, los honorarios y el medio de pago del Excel. El CUIL y el facturador se leen del `.env`.
 >
-> El Excel debe tener las columnas: `nombre y apellido | cuit | numero de sesiones | honorarios por sesion | total`
+> El Excel debe tener las columnas: `nombre y apellido | cuit | numero de sesiones | honorarios por sesion | medio de pago | total`
 
-## Quiero generar el Excel template para facturar a mis pacientes
-#### `guason facturar template`
-> Crea `pacientes.xlsx` en el escritorio con los encabezados esperados por `guason facturar sol`. La columna `total` viene como fórmula (sesiones × honorarios).
->
-> Opciones: `--destination RUTA` para elegir dónde guardarlo y `--sin-ejemplos` para generarlo sin filas de ejemplo.
 
 ## Quiero descargar los comprobantes de todas mis facturas en cierto rango de fechas
-#### `guason reports download START END --destination comprobantes`
+#### `guason report download START END --destination comprobantes`
 > Descarga facturas emitidas desde la fecha START hasta la fecha END y las guarda en el destino especificado
 
 ## Quiero un reporte de todo lo facturado a partir de los comprobantes de facturas
-#### `guason reports build COMPROBANTESPATH --destination reports`
+#### `guason report build COMPROBANTESPATH --destination reports`
 > Escribe un reporte csv y json a partir de la carpeta donde se encuentran las facturas
 
-> Nota: Este comando depende de haber corrido y guardado los comprobantes previamente mediante `guason reports download`
+> Nota: Este comando depende de haber corrido y guardado los comprobantes previamente mediante `guason report download`
 
 ## Quiero un reporte de mis ganancias por mes
-#### `guason reports get REPORT_PATH`
+#### `guason report earnings CSVREPORT`
+> Genera un csv `facturacion_por_mes.csv` con el total facturado por mes a partir de un reporte previamente generado
 
 
 ## Quiero que me diga cuánto deberia facturar segun mis gastos mensuales
-#### `guason create-plan GASTOMENSUAL`
-> Genera un plan de facturacion mensual de GASTOMENSUAL que factura solo los dias habiles, variando los montos diarios
+#### `guason create-plan --gastomensual GASTOMENSUAL`
+> Genera un plan de facturacion mensual acorde a tus gastos, facturando solo los dias habiles y variando los montos diarios. Tambien podés usar `--categoria CATEGORIA` en lugar de `--gastomensual`.
+
+## Quiero ver las categorias del monotributo y sus topes
+#### `guason categorias`
+> Lista cada categoria del monotributo con su facturacion maxima mensual y anual
