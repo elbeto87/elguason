@@ -16,6 +16,7 @@ classifiers = [
 requires-python = ">=3.8"
 dependencies = [
     "playwright==1.16.0",
+    "pyee==8.2.2",
     "python-dotenv==0.19.1",
     "click==8.0.3",
     "python-crontab==2.6.0",
