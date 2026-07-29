@@ -90,33 +90,30 @@ def facturar_sol(
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=False, slow_mo=1000)
         logger.info("Inicio de facturacion a pacientes (psicóloga) 📝")
-        context = browser.new_context(
-            accept_downloads=True,
-            user_agent=random_user_agent()
-        )
+        context = browser.new_context(accept_downloads=True, user_agent=random_user_agent())
         logger.info("Login into AFIP")
-        page = login(cuil, password, context)
+        page = login(cuil=cuil, password=password, context=context)
         logger.info("Ingresando a Comprobantes en línea")
-        page1 = enter_facturacion_microsite(page)
+        page1 = enter_facturacion_microsite(page=page)
         logger.info(f"Eligiendo facturador por nombre={facturador}")
-        elegir_facturador(facturador, page1)
+        elegir_facturador(facturador=facturador, page1=page1)
         logger.info("Comenzando a generar comprobantes")
-        repeat_facturacion_sol(page1, facturaciones, destination)
+        repeat_facturacion_sol(page1=page1, facturaciones=facturaciones, destination=destination)
         context.close()
         logger.info("Facturaciones a pacientes finalizadas ✨")
         browser.close()
 
-    mark_invoices_as_already_billed(facturaciones)
+    mark_invoices_as_already_billed(configs=facturaciones)
 
 
 def repeat_facturacion_sol(page1, facturaciones, destination):
     for config in facturaciones:
         logger.info(f'Generando comprobante: {config}')
-        generar_factura_sol(config, page1)
+        generar_factura_sol(config=config, page1=page1)
         logger.info("Confirmando factura")
-        confirmar_factura(config, page1)
+        confirmar_factura(config=config, page1=page1)
         logger.info("Descargando factura")
-        descargar_factura(page1, destination)
+        descargar_factura(page1=page1, destination=destination)
 
         # Volver al menú principal para la próxima factura
         logger.info("Volviendo al menú principal para el próximo comprobante")
