@@ -63,7 +63,9 @@ invoicespath = HERE / '.facturaciones_realizadas.json'
 
 
 def facturar_sol(
-        cuil, password, facturador,
+        cuil,
+        password,
+        facturador,
         facturaciones: List[FacturacionParameters],
         allow_billing_past_invoices: bool,
         destination: str,
