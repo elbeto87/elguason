@@ -111,38 +111,24 @@ def repeat_facturacion_sol(page1, facturaciones, destination):
 
 def generar_factura_sol(config: FacturacionParameters, page1):
     """Genera un comprobante siguiendo el flujo específico de la psicóloga.
-
-    Pasos (según pedido):
-        3. Generar comprobante
-        4. Punto de Venta a utilizar
-        5. Factura C
-        6. Conceptos a incluir
-        7. Fecha del comprobante
-        8. Servicio de "Tratamiento"
-        9. Consumidor final
-        10. CUIT del paciente
-        11. Medio de pago (del Excel)
-        12. Cantidad de unidades y honorarios (del Excel)
-        13. Continuar / confirmar
     """
 
-    # 3. Generar comprobante
+    # 1. Generar comprobante
     page1.click("a[role=\"button\"]:has-text(\"Generar Comprobantes\")")
 
+    # 2. Punto de Venta a utilizar
     logger.info('Eligiendo punto de venta y tipo de factura (Factura C)')
-
-    # 4. Punto de Venta a utilizar
     page1.select_option("select[name=\"puntoDeVenta\"]", config.punto_de_venta)
 
-    # 5. Factura C: se autoselecciona en el segundo dropdown al elegir punto de venta
+    # 3. Factura C: se autoselecciona en el segundo dropdown al elegir punto de venta
     time.sleep(2)
     page1.click("text=Continuar >")
 
-    # 6. Conceptos a incluir
+    # 4. Conceptos a incluir
     logger.info('Ingresando concepto: Servicios')
     page1.select_option("select[name=\"idConcepto\"]", value="2") # SERVICIOS
 
-    # 7. Fecha del comprobante / período facturado
+    # 5. Fecha del comprobante / período facturado
     if config.date_from is not None and config.date_to is not None:
         date_from = config.date_from.strftime('%d/%m/%Y')
         date_to = config.date_to.strftime('%d/%m/%Y')
@@ -154,20 +140,20 @@ def generar_factura_sol(config: FacturacionParameters, page1):
     page1.fill("input[name=\"periodoFacturadoHasta\"]", date_to)
     page1.fill("input[name=\"vencimientoPago\"]", date_payment)
 
-    # 8. Actividades asociadas
+    # 6. Actividades asociadas
     page1.select_option("select[name=\"actiAsociadaId\"]", value="863200") # SERVICIOS DE TRATAMIENTO
     page1.click("text=Continuar >")
 
-    # 9. Consumidor final
+    # 7. Consumidor final
     logger.info('Receptor: consumidor final')
     page1.select_option("select[name=\"idIVAReceptor\"]", value="5") # CONSUMIDOR FINAL
 
-    # 10. CUIT del paciente
+    # 8. CUIT del paciente
     if config.cuit_receptor:
         page1.click("input[name=\"nroDocReceptor\"]")
         page1.fill("input[name=\"nroDocReceptor\"]", config.cuit_receptor)
 
-    # 11. Medio de pago (del Excel)
+    # 9. Medio de pago (del Excel)
     if config.payment_method:
         logger.warning(
             f"Medio de pago '{config.payment_method}' aún no soportado; "
@@ -179,11 +165,11 @@ def generar_factura_sol(config: FacturacionParameters, page1):
         page1.check("input[name=\"formaDePago\"]")
     page1.click("text=Continuar >")
 
-    # 12. Cantidad de unidades (sesiones) y honorarios por unidad
+    # 10. Cantidad de unidades (sesiones) y honorarios por unidad
     page1.click("input[name=\"detallePrecio\"]")
     page1.fill("input[name=\"detallePrecio\"]", str(config.service_amount))
 
-    # 13. Continuar (luego confirmar_factura hace "Confirmar Datos")
+    # 11. Continuar (luego confirmar_factura hace "Confirmar Datos")
     page1.click("text=Continuar >")
 
 
