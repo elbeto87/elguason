@@ -139,7 +139,8 @@ def generar_factura_sol(config: FacturacionParameters, page1):
     page1.click("text=Continuar >")
 
     # 6. Conceptos a incluir
-    page1.select_option("select[name=\"idConcepto\"]", value="2")
+    logger.info('Ingresando concepto: Servicios')
+    page1.select_option("select[name=\"idConcepto\"]", value="2") # SERVICIOS
 
     # 7. Fecha del comprobante / período facturado
     if config.date_from is not None and config.date_to is not None:
@@ -152,18 +153,14 @@ def generar_factura_sol(config: FacturacionParameters, page1):
     page1.fill("input[name=\"periodoFacturadoDesde\"]", date_from)
     page1.fill("input[name=\"periodoFacturadoHasta\"]", date_to)
     page1.fill("input[name=\"vencimientoPago\"]", date_payment)
+
+    # 8. Actividades asociadas
+    page1.select_option("select[name=\"actiAsociadaId\"]", value="863200") # SERVICIOS DE TRATAMIENTO
     page1.click("text=Continuar >")
-
-
-    # 8. Servicio de tratamiento -> concepto "Servicios"
-    logger.info('Ingresando concepto: Servicios')
-    servicios = "2"
-    page1.select_option("select[name=\"idConcepto\"]", servicios)
 
     # 9. Consumidor final
     logger.info('Receptor: consumidor final')
-    consumidor_final = "5"
-    page1.select_option("select[name=\"idIVAReceptor\"]", consumidor_final)
+    page1.select_option("select[name=\"idIVAReceptor\"]", value="5") # CONSUMIDOR FINAL
 
     # 10. CUIT del paciente
     if config.cuit_receptor:
@@ -172,11 +169,6 @@ def generar_factura_sol(config: FacturacionParameters, page1):
 
     # 11. Medio de pago (del Excel)
     if config.payment_method:
-        # TODO: Mapear el medio de pago del Excel (ej: "Contado", "Tarjeta de débito",
-        #  "Transferencia") al control correcto de la web. Se desconoce si es un
-        #  <select> (con qué `name`/`value`) o un checkbox distinto al de "Contado".
-        #  Mientras no se verifique en la web real, no completar el medio de pago
-        #  arbitrario y caer al comportamiento por defecto (Contado) para no romper.
         logger.warning(
             f"Medio de pago '{config.payment_method}' aún no soportado; "
             f"se marca 'Contado' por defecto (revisar TODO)."
@@ -187,17 +179,7 @@ def generar_factura_sol(config: FacturacionParameters, page1):
         page1.check("input[name=\"formaDePago\"]")
     page1.click("text=Continuar >")
 
-    # 7 (detalle). Descripción del servicio: Tratamiento
-    page1.click("textarea[name=\"detalleDescripcion\"]")
-    page1.fill("textarea[name=\"detalleDescripcion\"]", config.service_name)
-
     # 12. Cantidad de unidades (sesiones) y honorarios por unidad
-    # TODO: Verificar el `name` real del input de cantidad de unidades en la web
-    #  (probablemente algo como `input[name="detalleCantidad"]`). Además, confirmar
-    #  si `detallePrecio` espera el precio unitario (honorarios por sesión) o el total.
-    #  Si espera el unitario, usar `honorarios_por_sesion` en vez del total.
-    # page1.click("input[name=\"detalleCantidad\"]")
-    # page1.fill("input[name=\"detalleCantidad\"]", str(config.service_units))
     page1.click("input[name=\"detallePrecio\"]")
     page1.fill("input[name=\"detallePrecio\"]", str(config.service_amount))
 
