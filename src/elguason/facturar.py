@@ -70,12 +70,9 @@ def facturar_sol(
         allow_billing_past_invoices: bool,
         destination: str,
 ):
-    """Flujo de facturación para la psicóloga (Factura C, actividad 04).
+    """Flujo de facturación para la psicóloga (Factura C).
 
-    Es análogo a ``facturar_multiples`` pero usa ``generar_factura_sol``, que
-    contempla los pasos específicos del rubro psicología:
-
-        - Elegir la actividad como psicóloga (número 04)
+        - Elegir la actividad como psicóloga
         - Servicio de "Tratamiento"
         - Consumidor final con CUIT del paciente
         - Medio de pago tomado del Excel
