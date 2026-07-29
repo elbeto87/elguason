@@ -60,6 +60,10 @@ def sol():
     destination = Path.cwd() / 'comprobantes'
     allow_billing_past_invoices = False
 
+    if cuil is None or facturador is None:
+        logger.error("CUIL and/or FACTURADOR not set in .env")
+        sys.exit(1)
+
     try:
         pacientes = leer_pacientes()
     except FileNotFoundError as e:
@@ -76,10 +80,9 @@ def sol():
                 service_name="Tratamiento",
                 service_amount=paciente.total,
                 service_units=paciente.numero_de_sesiones,
-                payment_method=paciente.medio_de_pago or None,
+                payment_method=paciente.medio_de_pago or "Contado",
                 cuit_receptor=paciente.cuit,
                 punto_de_venta="0004-Olazabal Av. 5031 - Ciudad de Buenos Aires",
-                # Actividad de psicología. El flujo de `sol` la usa (paso 04).
                 actividad="04",
             )
         )
