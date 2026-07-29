@@ -116,13 +116,14 @@ def generar_factura_sol(config: FacturacionParameters, page1):
         3. Generar comprobante
         4. Punto de Venta a utilizar
         5. Factura C
-        6. Fecha del comprobante
-        7. Servicio de "Tratamiento"
-        8. Consumidor final
-        9. CUIT del paciente
-        10. Medio de pago (del Excel)
-        11. Cantidad de unidades y honorarios (del Excel)
-        12. Continuar / confirmar
+        6. Conceptos a incluir
+        7. Fecha del comprobante
+        8. Servicio de "Tratamiento"
+        9. Consumidor final
+        10. CUIT del paciente
+        11. Medio de pago (del Excel)
+        12. Cantidad de unidades y honorarios (del Excel)
+        13. Continuar / confirmar
     """
 
     # 3. Generar comprobante
@@ -137,7 +138,10 @@ def generar_factura_sol(config: FacturacionParameters, page1):
     time.sleep(2)
     page1.click("text=Continuar >")
 
-    # 6. Fecha del comprobante / período facturado
+    # 6. Conceptos a incluir
+    page1.select_option("select[name=\"idConcepto\"]", value="2")
+
+    # 7. Fecha del comprobante / período facturado
     if config.date_from is not None and config.date_to is not None:
         date_from = config.date_from.strftime('%d/%m/%Y')
         date_to = config.date_to.strftime('%d/%m/%Y')
@@ -151,22 +155,22 @@ def generar_factura_sol(config: FacturacionParameters, page1):
     page1.click("text=Continuar >")
 
 
-    # 7. Servicio de tratamiento -> concepto "Servicios"
+    # 8. Servicio de tratamiento -> concepto "Servicios"
     logger.info('Ingresando concepto: Servicios')
     servicios = "2"
     page1.select_option("select[name=\"idConcepto\"]", servicios)
 
-    # 8. Consumidor final
+    # 9. Consumidor final
     logger.info('Receptor: consumidor final')
     consumidor_final = "5"
     page1.select_option("select[name=\"idIVAReceptor\"]", consumidor_final)
 
-    # 9. CUIT del paciente
+    # 10. CUIT del paciente
     if config.cuit_receptor:
         page1.click("input[name=\"nroDocReceptor\"]")
         page1.fill("input[name=\"nroDocReceptor\"]", config.cuit_receptor)
 
-    # 10. Medio de pago (del Excel)
+    # 11. Medio de pago (del Excel)
     if config.payment_method:
         # TODO: Mapear el medio de pago del Excel (ej: "Contado", "Tarjeta de débito",
         #  "Transferencia") al control correcto de la web. Se desconoce si es un
@@ -187,7 +191,7 @@ def generar_factura_sol(config: FacturacionParameters, page1):
     page1.click("textarea[name=\"detalleDescripcion\"]")
     page1.fill("textarea[name=\"detalleDescripcion\"]", config.service_name)
 
-    # 11. Cantidad de unidades (sesiones) y honorarios por unidad
+    # 12. Cantidad de unidades (sesiones) y honorarios por unidad
     # TODO: Verificar el `name` real del input de cantidad de unidades en la web
     #  (probablemente algo como `input[name="detalleCantidad"]`). Además, confirmar
     #  si `detallePrecio` espera el precio unitario (honorarios por sesión) o el total.
@@ -197,7 +201,7 @@ def generar_factura_sol(config: FacturacionParameters, page1):
     page1.click("input[name=\"detallePrecio\"]")
     page1.fill("input[name=\"detallePrecio\"]", str(config.service_amount))
 
-    # 12. Continuar (luego confirmar_factura hace "Confirmar Datos")
+    # 13. Continuar (luego confirmar_factura hace "Confirmar Datos")
     page1.click("text=Continuar >")
 
 
