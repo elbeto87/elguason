@@ -1,6 +1,3 @@
-# El Guasón
-![logo](meta/elguason.jpeg)
-
 ### Installation (Unix only for now)
 `bash install_unix.sh`
 
