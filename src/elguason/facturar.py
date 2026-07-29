@@ -34,8 +34,8 @@ class FacturacionParameters:
     actividad: str = None
 
     def __str__(self):
-        base = f"Factura de '{self.facturador}' por '{self.service_name}' por un monto de ${self.service_amount} "
-        base += f'para {self.cuit_receptor}' if self.cuit_receptor else ''
+        base = (f"Factura de '{self.facturador}' por '{self.service_name}' a '{self.cuit_receptor}' por "
+                f"${self.service_amount} con fecha de {self.date}")
         return base
 
     __repr__ = __str__
@@ -124,6 +124,7 @@ def generar_factura_sol(config: FacturacionParameters, page1):
         11. Cantidad de unidades y honorarios (del Excel)
         12. Continuar / confirmar
     """
+
     # 3. Generar comprobante
     page1.click("a[role=\"button\"]:has-text(\"Generar Comprobantes\")")
 

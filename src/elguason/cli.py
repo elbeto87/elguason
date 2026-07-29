@@ -38,12 +38,13 @@ def sol():
     """
     cuil = os.getenv('CUIL')
     facturador = os.getenv('FACTURADOR')
+    punto_de_venta = os.getenv('PUNTO_DE_VENTA')
     password = _read_password()
     destination = Path.cwd() / 'comprobantes'
     allow_billing_past_invoices = False
 
-    if cuil is None or facturador is None:
-        logger.error("CUIL and/or FACTURADOR not set in .env")
+    if cuil is None or facturador is None or punto_de_venta is None:
+        logger.error("CUIL and/or PUNTO_DE_VENTA and/or FACTURADOR not set in .env")
         sys.exit(1)
 
     try:
@@ -64,7 +65,7 @@ def sol():
                 service_units=paciente.numero_de_sesiones,
                 payment_method=paciente.medio_de_pago or "Contado",
                 cuit_receptor=paciente.cuit,
-                punto_de_venta="0004-Olazabal Av. 5031 - Ciudad de Buenos Aires",
+                punto_de_venta=punto_de_venta,
                 actividad="04",
             )
         )
