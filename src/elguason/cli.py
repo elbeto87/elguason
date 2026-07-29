@@ -51,7 +51,7 @@ def sol():
 
         nombre y apellido | cuit | numero de sesiones | honorarios por sesion | medio de pago | total
 
-    Por cada paciente emite una Factura C (como psicóloga, actividad 04) por el
+    Por cada paciente emite una Factura C (como psicóloga) por el
     total (sesiones * honorarios), a consumidor final con el CUIT del paciente.
     """
     cuil = os.getenv('CUIL')
