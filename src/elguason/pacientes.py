@@ -5,10 +5,12 @@ escritorio del usuario (``~/Desktop`` o ``~/Escritorio``).
 
 Se espera la siguiente estructura de columnas (con encabezado en la primera fila):
 
-    nombre y apellido | cuit | numero de sesiones | honorarios por sesion | total
+    nombre y apellido | cuit | numero de sesiones | honorarios por sesion | medio de pago | total
 
 Donde ``total`` = ``numero de sesiones`` * ``honorarios por sesion``.
 Si la columna ``total`` viene vacía se calcula automáticamente.
+``medio de pago`` es el medio de pago a informar en la factura (ej: "Contado",
+"Tarjeta de débito", "Transferencia", etc.).
 """
 from dataclasses import dataclass
 from pathlib import Path
@@ -29,6 +31,7 @@ class Paciente:
     cuit: str
     numero_de_sesiones: int
     honorarios_por_sesion: int
+    medio_de_pago: str = ""
 
     @property
     def total(self) -> int:
@@ -79,7 +82,7 @@ def leer_pacientes(path: Optional[Path] = None) -> List[Paciente]:
         raise FileNotFoundError(
             f"No se encontró el Excel de pacientes en {path}. "
             f"Creá un archivo '{NOMBRE_ARCHIVO_PACIENTES}' en tu escritorio con las columnas: "
-            f"nombre y apellido, cuit, numero de sesiones, honorarios por sesion, total"
+            f"nombre y apellido, cuit, numero de sesiones, honorarios por sesion, medio de pago, total"
         )
 
     logger.info(f"Leyendo Excel de pacientes desde {path}")
@@ -101,16 +104,21 @@ def leer_pacientes(path: Optional[Path] = None) -> List[Paciente]:
         if not nombre or not str(nombre).strip():
             raise ValueError(f"Falta 'nombre y apellido' en la fila {fila_idx}")
 
+        medio_de_pago = ""
+        if len(row) > 4 and row[4] not in (None, ""):
+            medio_de_pago = str(row[4]).strip()
+
         paciente = Paciente(
             nombre_y_apellido=str(nombre).strip(),
             cuit=str(cuit).strip() if cuit not in (None, "") else "",
             numero_de_sesiones=numero_de_sesiones,
             honorarios_por_sesion=honorarios_por_sesion,
+            medio_de_pago=medio_de_pago,
         )
 
-        # Validar el total si vino informado en la quinta columna
-        if len(row) > 4 and row[4] not in (None, ""):
-            total_declarado = _to_int(row[4], "total", fila_idx)
+        # Validar el total si vino informado en la sexta columna
+        if len(row) > 5 and row[5] not in (None, ""):
+            total_declarado = _to_int(row[5], "total", fila_idx)
             if total_declarado != paciente.total:
                 logger.warning(
                     f"El total declarado ({total_declarado}) para '{paciente.nombre_y_apellido}' "

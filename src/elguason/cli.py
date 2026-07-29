@@ -10,13 +10,11 @@ import rich_click as click
 from dotenv import load_dotenv
 from loguru import logger
 
-from elguason import titulo_de_servicio_generator
 from elguason.configure_cron import configure
 from elguason.download_facturas import download_comprobantes, DownloadComprobantesConfig
 from elguason.facturacion_report import generate_report_from_invoices
-from elguason.facturar import FacturacionParameters, facturar as facturar_una, facturar_multiples
+from elguason.facturar import FacturacionParameters, facturar_sol
 from elguason.pacientes import leer_pacientes, ruta_excel_pacientes
-from elguason.utils import parse_date
 from elguason.planificar import (
     generar_plan_de_facturacion_mensual,
     write_plan,
@@ -42,86 +40,6 @@ def facturar():
     """Subcommand for commands about facturar"""
 
 
-@click.command()
-@click.option('--cuil', default=os.getenv('CUIL'))
-@click.option('--servicio', prompt='Ingresa el titulo del servicio a facturar', default=titulo_de_servicio_generator())
-@click.option('--monto', prompt='Ingresa el monto a facturar', default=10_000, type=click.IntRange(0))
-@click.option('--facturador', default=os.getenv('FACTURADOR'))
-@click.option('--cuitdestino', default=None, help="CUIT destinatario si monto excede limite de anonimato")
-@click.option('--ptoventa', default=1)
-@click.option('--destination', help='Destination folder of billing receipts', default=Path.cwd() / 'comprobantes')
-@click.option('--autoconfirm', default=False)
-def now(cuil, servicio, monto, facturador, cuitdestino, ptoventa, destination, autoconfirm):
-    """Emitir factura mediante parametros provistos de forma interactiva"""
-    passwd = _read_password()
-    config = FacturacionParameters(
-        cuil=cuil,
-        password=passwd,
-        facturador=facturador,
-        service_name=servicio,
-        cuit_receptor=cuitdestino,
-        punto_de_venta=ptoventa,
-        service_amount=monto,
-        askconfirmation=not autoconfirm,
-    )
-    facturar_una(config=config, destination=os.path.join(destination, ''))
-
-
-@click.command()
-@click.argument('csvpath')
-@click.option('--cuil', default=os.getenv('CUIL'))
-@click.option('--facturador', default=os.getenv('FACTURADOR'))
-@click.option('--destination', help='Destination folder of billing receipts', default=Path.cwd() / 'comprobantes')
-@click.option('--allow-billing-past-invoices', help="Set this if you want to allow billing of services in the past",
-              default=False, is_flag=True)
-@click.option('--autoconfirm', default=False)
-def plan(csvpath, cuil, facturador, destination, allow_billing_past_invoices, autoconfirm):
-    """Emite facturas dado lo especificado en CSVPATH
-
-    El csv debe tener la siguiente estructura:
-
-        fecha,servicio,monto,cuit_destino,punto_de_venta
-        01/01/2021,Honorarios,12300,,,
-
-    Tanto cuit destino como punto de venta son opcionales.
-    cuit_destino defaultea a vacia
-    punto_de_venta a 1, que es el caso comun de un unico punto de venta
-    """
-    facturas = []
-    password = _read_password()
-    with open(csvpath, 'r') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            factura_date = datetime.datetime.strptime(row['fecha'], '%d/%m/%Y').date()
-            if factura_date > datetime.datetime.today().date():
-                logger.warning(
-                    f"Ignored an invoice set for {factura_date:%d/%m/%Y} as it is in the future. "
-                    f"({row['servicio']} - {row['monto']})"
-                )
-                continue
-
-            facturas.append(
-                FacturacionParameters(
-                    cuil=cuil,
-                    password=password,
-                    facturador=facturador,
-                    date=datetime.datetime.strptime(row['fecha'], '%d/%m/%Y').date(),
-                    date_from=parse_date(row.get('fecha_desde')),
-                    date_to=parse_date(row.get('fecha_hasta')),
-                    date_payment=parse_date(row.get('fecha_pago')),
-                    service_name=row['servicio'],
-                    service_amount=int(row['monto']),
-                    cuit_receptor=row['cuit_destino'],
-                    punto_de_venta=row['punto_de_venta'] or 1,
-                    askconfirmation=not autoconfirm,
-                )
-            )
-    if not facturas:
-        click.echo(f"✅ No hay nada pendiente a facturar en {csvpath}")
-        return
-
-    facturar_multiples(cuil, password, facturador, facturas, allow_billing_past_invoices, os.path.join(destination, ''))
-
 
 @click.command()
 def sol():
@@ -131,9 +49,10 @@ def sol():
     (variables CUIL y FACTURADOR) y los pacientes del Excel del escritorio,
     con las columnas:
 
-        nombre y apellido | cuit | numero de sesiones | honorarios por sesion | total
+        nombre y apellido | cuit | numero de sesiones | honorarios por sesion | medio de pago | total
 
-    Por cada paciente emite una factura por el total (sesiones * honorarios).
+    Por cada paciente emite una Factura C (como psicóloga, actividad 04) por el
+    total (sesiones * honorarios), a consumidor final con el CUIT del paciente.
     """
     cuil = os.getenv('CUIL')
     facturador = os.getenv('FACTURADOR')
@@ -154,10 +73,14 @@ def sol():
                 cuil=cuil,
                 password=password,
                 facturador=facturador,
-                service_name=f"Sesiones - {paciente.nombre_y_apellido}",
+                service_name="Tratamiento",
                 service_amount=paciente.total,
+                service_units=paciente.numero_de_sesiones,
+                payment_method=paciente.medio_de_pago or None,
                 cuit_receptor=paciente.cuit,
                 punto_de_venta=1,
+                # Actividad de psicología. El flujo de `sol` la usa (paso 04).
+                actividad="04",
             )
         )
 
@@ -165,12 +88,7 @@ def sol():
         click.echo(f"✅ No hay pacientes para facturar en {ruta_excel_pacientes()}")
         return
 
-    # TODO: El "caminito" via Playwright para facturar a pacientes puede diferir del
-    #  flujo estandar de `generar_factura` en facturar.py (por ejemplo, otro tipo de
-    #  comprobante, receptor, o campos especificos del rubro salud/psicologia).
-    #  Por ahora se reutiliza `facturar_multiples`, revisar y ajustar el flujo real
-    #  cuando se conozcan las diferencias en la web de AFIP/ARCA.
-    facturar_multiples(cuil, password, facturador, facturas, allow_billing_past_invoices, os.path.join(destination, ''))
+    facturar_sol(cuil, password, facturador, facturas, allow_billing_past_invoices, os.path.join(destination, ''))
 
 
 
@@ -307,8 +225,6 @@ report.add_command(download)
 report.add_command(build)
 report.add_command(earnings)
 
-facturar.add_command(now)
-facturar.add_command(plan)
 facturar.add_command(sol)
 
 
